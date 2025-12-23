@@ -108,11 +108,12 @@ export default function Auth() {
       });
 
       navigate("/dashboard");
-    } catch {
+    } catch (error) {
+      console.error('Auth error:', error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Unexpected error occurred",
+        title: "Connection Error",
+        description: "Unable to connect to server. Please try again.",
       });
     } finally {
       setLoading(false);

@@ -23,7 +23,7 @@ let db;
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://finonest.org'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://finonest.org', 'https://finonest.com'],
   credentials: true
 }));
 
