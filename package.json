@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node server/production-local.js",
+    "server": "node server/production.js",
     "server:dev": "node --watch server/production.js"
   },
   "dependencies": {
