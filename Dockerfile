@@ -16,6 +16,8 @@ COPY . .
 # Set build environment
 ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=false
+ENV VITE_SUPABASE_URL=https://placeholder.supabase.co
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=placeholder_key
 
 # Debug: Show environment and run build with verbose output
 RUN echo "Node version: $(node --version)" && \
