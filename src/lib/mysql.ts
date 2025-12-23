@@ -1,37 +1,47 @@
-import mysql from 'mysql2/promise';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const dbConfig = {
-  host: 'vgc0o0gkw0cgwo0os0g0ksg0',
-  port: 3306,
-  user: 'admin',
-  password: 'Finonest@admin@root',
-  database: 'Fino'
-}
+export const apiClient = {
+  async get(endpoint: string) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+    return response.json();
+  },
 
-let connection: mysql.Connection | null = null;
-
-export const connectDB = async () => {
-  try {
-    if (!connection) {
-      connection = await mysql.createConnection(dbConfig);
-      console.log('MySQL connected successfully');
-    }
-    return connection;
-  } catch (error) {
-    console.error('MySQL connection failed:', error);
-    throw error;
+  async post(endpoint: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+    return response.json();
   }
 };
 
-export const query = async (sql: string, params?: any[]) => {
+// Replace MySQL direct connection with API calls
+export const getContent = async (key: string) => {
   try {
-    const conn = await connectDB();
-    const [results] = await conn.execute(sql, params);
-    return results;
+    return await apiClient.get(`/api/content/${key}`);
   } catch (error) {
-    console.error('Query failed:', error);
-    throw error;
+    console.error(`Error fetching content for key: ${key}`, error);
+    return null;
   }
 };
 
-export default { connectDB, query };
+export const getTheme = async () => {
+  try {
+    return await apiClient.get('/api/theme');
+  } catch (error) {
+    console.error('Error fetching theme:', error);
+    return {};
+  }
+};
+
+export const getPageComponents = async (slug: string) => {
+  try {
+    return await apiClient.get(`/api/pages/${slug}/components`);
+  } catch (error) {
+    console.error(`Error fetching components for page: ${slug}`, error);
+    return [];
+  }
+};
