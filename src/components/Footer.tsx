@@ -11,6 +11,13 @@ const Footer = () => {
     });
   };
 
+  const openDirections = () => {
+    const address = "3rd Floor, Besides Jaipur Hospital, BL Tower 1, Tonk Rd, Mahaveer Nagar, Jaipur, Rajasthan 302018";
+    const coords = "26.857419278517135,75.79565395415636";
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}&destination_place_id=${coords}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <footer className="bg-foreground text-background">
       <div className="container px-6 pt-16 pb-8">
@@ -21,9 +28,21 @@ const Footer = () => {
             <p className="text-sm text-background/70 leading-relaxed">
               Finonest is your trusted partner for all financial needs. We simplify the loan process with transparency, speed, and personalized solutions.
             </p>
-            <div className="flex items-center gap-2 text-sm text-background/80">
-              <MapPin className="w-4 h-4 flex-shrink-0" />
-              <span>VQ4W+W7, Jaipur, Rajasthan</span>
+            <div className="flex items-start gap-2 text-sm text-background/80 cursor-pointer hover:text-accent transition-colors" onClick={openDirections}>
+              <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>3rd Floor, Besides Jaipur Hospital, BL Tower 1, Tonk Rd, Mahaveer Nagar, Jaipur, Rajasthan 302018</span>
+            </div>
+            <div className="mt-4 relative cursor-pointer" onClick={openDirections}>
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3558.0!2d75.79572905600946!3d26.857562851737594!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjbCsDUxJzI3LjIiTiA3NcKwNDcnNDQuNiJF!5e0!3m2!1sen!2sin!4v1640000000000!5m2!1sen!2sin"
+                width="100%"
+                height="150"
+                style={{ border: 0, borderRadius: '8px', pointerEvents: 'none' }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div className="absolute inset-0 bg-transparent" />
             </div>
           </div>
 

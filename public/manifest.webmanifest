@@ -1,0 +1,21 @@
+{
+  "name": "Finonest - India's Fastest Growing Loan Provider",
+  "short_name": "Finonest",
+  "description": "Get home loans, car loans, personal loans & business loans with quick approval and best interest rates.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a3055",
+  "icons": [
+    {
+      "src": "/assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
