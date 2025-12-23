@@ -21,7 +21,12 @@ ENV GENERATE_SOURCEMAP=false
 RUN echo "Node version: $(node --version)" && \
     echo "NPM version: $(npm --version)" && \
     echo "NODE_ENV: $NODE_ENV" && \
-    npm run build --verbose || (echo "Build failed, showing detailed error:" && npm run build)
+    echo "Starting build..." && \
+    npm run build && \
+    echo "Build completed. Checking dist folder:" && \
+    ls -la dist/ && \
+    echo "Dist contents:" && \
+    find dist -type f | head -10
 
 # Production stage
 FROM nginx:alpine AS production
@@ -31,6 +36,12 @@ RUN apk add --no-cache curl
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Debug: Check what was copied
+RUN echo "Files in nginx html directory:" && \
+    ls -la /usr/share/nginx/html/ && \
+    echo "Index.html exists:" && \
+    test -f /usr/share/nginx/html/index.html && echo "YES" || echo "NO"
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
