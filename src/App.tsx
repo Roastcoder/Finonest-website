@@ -88,7 +88,9 @@ const App = () => {
                 <Route path="/cibil-check" element={<CibilCheck />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
+                <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
