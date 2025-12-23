@@ -324,48 +324,7 @@ const Auth = () => {
             )}
           </Button>
 
-          {/* Demo Admin Login Button */}
-          {isLogin && (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-12 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 font-semibold"
-              onClick={async () => {
-                setLoading(true);
-                // First seed the demo user if it doesn't exist
-                try {
-                  const response = await fetch(
-                    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-demo-user`,
-                    { method: 'POST', headers: { 'Content-Type': 'application/json' } }
-                  );
-                  const result = await response.json();
-                  console.log("Demo user seed result:", result);
-                } catch (err) {
-                  console.log("Demo seed error (may already exist):", err);
-                }
-                // Login directly with demo credentials
-                const { error } = await supabase.auth.signInWithPassword({
-                  email: "demo@finonest.com",
-                  password: "demo123",
-                });
-                if (error) {
-                  toast({
-                    variant: "destructive",
-                    title: "Demo Login Failed",
-                    description: error.message,
-                  });
-                } else {
-                  toast({
-                    title: "Welcome, Demo Admin!",
-                    description: "You're now logged in as an admin.",
-                  });
-                }
-                setLoading(false);
-              }}
-            >
-              🔑 Demo Admin Login
-            </Button>
-          )}
+
         </form>
 
         {/* Divider */}
