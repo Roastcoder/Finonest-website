@@ -255,6 +255,7 @@ const Auth = () => {
                   placeholder="Enter your full name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
                   className="pl-10 h-12 bg-white dark:bg-slate-800 border-blue-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
@@ -275,6 +276,7 @@ const Auth = () => {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 className="pl-10 h-12 bg-white dark:bg-slate-800 border-blue-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
@@ -294,11 +296,13 @@ const Auth = () => {
                 placeholder={isLogin ? "Enter your password" : "Create a password (min 6 chars)"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete={isLogin ? "current-password" : "new-password"}
                 className="pl-10 pr-10 h-12 bg-white dark:bg-slate-800 border-blue-200 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
