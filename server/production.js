@@ -11,16 +11,25 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'finonest-production-secret';
 
+// Log DB ENV at startup
+console.log("🧪 DB ENV CHECK", {
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_USER: process.env.DB_USER,
+  DB_NAME: process.env.DB_NAME,
+});
+
 // Database pool
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'vgc0o0gkw0cgwo0os0g0ksg0',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'admin',
-  password: process.env.DB_PASSWORD || 'Finonest@admin@root',
-  database: process.env.DB_NAME || 'Fino',
+  host: process.env.DB_HOST || '10.0.1.8',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'Finonestssuper@admin',
+  database: process.env.DB_NAME || 'finonest',
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  connectionLimit: 5,
+  queueLimit: 0,
+  connectTimeout: 30000,
 });
 
 // Security middleware
@@ -115,64 +124,72 @@ const query = async (sql, params = []) => {
   }
 };
 
-// Initialize database
-const initDB = async () => {
-  try {
-    await query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        full_name VARCHAR(255) NOT NULL,
-        role ENUM('user', 'admin') DEFAULT 'user',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+// Initialize database with retry logic
+const initDB = async (retries = 5) => {
+  while (retries > 0) {
+    try {
+      await pool.query("SELECT 1");
+      console.log("✅ Database connected (MySQL)");
+      
+      await query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          full_name VARCHAR(255) NOT NULL,
+          role ENUM('user', 'admin') DEFAULT 'user',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    await query(`
-      CREATE TABLE IF NOT EXISTS loan_applications (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        full_name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        phone VARCHAR(20) NOT NULL,
-        loan_type ENUM('home', 'personal', 'business', 'car') NOT NULL,
-        loan_amount DECIMAL(15,2) NOT NULL,
-        monthly_income DECIMAL(15,2),
-        employment_type VARCHAR(100),
-        city VARCHAR(100),
-        pincode VARCHAR(10),
-        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+      await query(`
+        CREATE TABLE IF NOT EXISTS loan_applications (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          full_name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          phone VARCHAR(20) NOT NULL,
+          loan_type ENUM('home', 'personal', 'business', 'car') NOT NULL,
+          loan_amount DECIMAL(15,2) NOT NULL,
+          monthly_income DECIMAL(15,2),
+          employment_type VARCHAR(100),
+          city VARCHAR(100),
+          pincode VARCHAR(10),
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    await query(`
-      CREATE TABLE IF NOT EXISTS contact_messages (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        phone VARCHAR(20),
-        message TEXT NOT NULL,
-        status ENUM('new', 'read', 'replied') DEFAULT 'new',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+      await query(`
+        CREATE TABLE IF NOT EXISTS contact_messages (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          phone VARCHAR(20),
+          message TEXT NOT NULL,
+          status ENUM('new', 'read', 'replied') DEFAULT 'new',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    // Create admin user
-    const adminExists = await query('SELECT id FROM users WHERE email = ?', ['admin@finonest.com']);
-    if (adminExists.length === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 12);
-      await query(
-        'INSERT INTO users (email, password, full_name, role) VALUES (?, ?, ?, ?)',
-        ['admin@finonest.com', hashedPassword, 'Admin User', 'admin']
-      );
+      // Create admin user
+      const adminExists = await query('SELECT id FROM users WHERE email = ?', ['admin@finonest.com']);
+      if (adminExists.length === 0) {
+        const hashedPassword = await bcrypt.hash('admin123', 12);
+        await query(
+          'INSERT INTO users (email, password, full_name, role) VALUES (?, ?, ?, ?)',
+          ['admin@finonest.com', hashedPassword, 'Admin User', 'admin']
+        );
+      }
+
+      console.log('✅ Database initialized');
+      return;
+    } catch (err) {
+      console.error("⏳ DB not ready, retrying...", err.code);
+      retries--;
+      await new Promise(r => setTimeout(r, 4000));
     }
-
-    console.log('✅ Database initialized');
-  } catch (error) {
-    console.error('❌ Database initialization failed:', error);
-    process.exit(1);
   }
+  throw new Error("❌ Database connection failed after retries");
 };
 
 // Routes
@@ -384,17 +401,22 @@ const gracefulShutdown = (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Start server
+// Start server with safe initialization
 const startServer = async () => {
-  await initDB();
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Finonest API running on port ${PORT}`);
-    console.log(`🔐 Admin login: admin@finonest.com / admin123`);
-    console.log(`🛡️ Security: Helmet + Rate Limiting + CORS`);
-    console.log(`📊 Database: MySQL with connection pooling`);
-  });
-  
-  return server;
+  try {
+    await initDB();
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Finonest API running on port ${PORT}`);
+      console.log(`🔐 Admin login: admin@finonest.com / admin123`);
+      console.log(`🛡️ Security: Helmet + Rate Limiting + CORS`);
+      console.log(`📊 Database: MySQL with connection pooling`);
+    });
+    
+    return server;
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
 };
 
 const server = await startServer();
