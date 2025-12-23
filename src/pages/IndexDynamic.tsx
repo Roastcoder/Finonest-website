@@ -92,35 +92,49 @@ const Index = () => {
       />
       
       {/* Credit Score Banner */}
-      <CreditScoreBanner />
+      <div className="-mt-7">
+        <CreditScoreBanner />
+      </div>
       
       {/* Hide detailed services on mobile, show on desktop */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block -mt-2">
         <AnimateOnScroll animation="fade-up" delay={0}>
           <Services />
         </AnimateOnScroll>
       </div>
       
-      <AnimateOnScroll animation="fade-up">
-        <ProcessSteps />
-      </AnimateOnScroll>
-      <AnimateOnScroll animation="fade-up">
-        <WhyUs />
-      </AnimateOnScroll>
-      <AnimateOnScroll animation="fade-up">
-        <Testimonials />
-      </AnimateOnScroll>
-      <AnimateOnScroll animation="fade-up">
-        <FAQ />
-      </AnimateOnScroll>
-      <AnimateOnScroll animation="fade-up">
-        <Contact />
-      </AnimateOnScroll>
+      <div className="-mt-30">
+        <AnimateOnScroll animation="fade-up">
+          <ProcessSteps />
+        </AnimateOnScroll>
+      </div>
+      <div className="-mt-30">
+        <AnimateOnScroll animation="fade-up">
+          <WhyUs />
+        </AnimateOnScroll>
+      </div>
+      <div className="-mt-30">
+        <AnimateOnScroll animation="fade-up">
+          <Testimonials />
+        </AnimateOnScroll>
+      </div>
+      <div className="-mt-30">
+        <AnimateOnScroll animation="fade-up">
+          <FAQ />
+        </AnimateOnScroll>
+      </div>
+      <div className="-mt-30">
+        <AnimateOnScroll animation="fade-up">
+          <Contact />
+        </AnimateOnScroll>
+      </div>
       
       {/* Banking Partners - Moved to end */}
-      <AnimateOnScroll animation="fade-up">
-        <PartnerBanks />
-      </AnimateOnScroll>
+      <div className="-mt-24">
+        <AnimateOnScroll animation="fade-up">
+          <PartnerBanks />
+        </AnimateOnScroll>
+      </div>
       
       <Footer />
       <WhatsAppButton />
