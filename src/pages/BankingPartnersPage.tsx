@@ -89,7 +89,7 @@ const BankingPartnersPage = () => {
                 <div key={index} className="bg-card rounded-xl border border-border p-4 md:p-6 hover:shadow-lg transition-all group">
                   <div className="aspect-square mb-4 flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden">
                     <img 
-                      src={`/src/assets/${bank.logo}`}
+                      src={bank.logo}
                       alt={bank.name}
                       className="w-full h-full object-contain p-2"
                       onError={(e) => {

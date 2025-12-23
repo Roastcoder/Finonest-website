@@ -52,7 +52,7 @@ const PartnerBanks = () => {
     <div className="flex-shrink-0">
       <div className="rounded-lg md:rounded-xl min-w-[80px] md:min-w-[120px] h-10 md:h-14 transition-all duration-300 hover:scale-105 border border-border/30 shadow-sm bg-card overflow-hidden">
         <img 
-          src={`/src/assets/${bank.logo}`}
+          src={bank.logo}
           alt={bank.name}
           className="w-full h-full object-contain p-1"
           onError={(e) => {
