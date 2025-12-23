@@ -1,62 +1,23 @@
-# Multi-stage build for production deployment
-FROM node:18-alpine AS builder
+FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm install
 
-# Install all dependencies (including dev for build)
-RUN npm ci
-
-# Copy source code
 COPY . .
 
-# Set build environment
 ENV NODE_ENV=production
-ENV GENERATE_SOURCEMAP=false
-ENV VITE_SUPABASE_URL=https://placeholder.supabase.co
-ENV VITE_SUPABASE_PUBLISHABLE_KEY=placeholder_key
+ENV DB_HOST=10.0.1.8
+ENV DB_PORT=3306
+ENV DB_USER=admin
+ENV DB_PASSWORD=Finonest@admin@root
+ENV DB_NAME=Fino
+ENV JWT_SECRET=finonest-production-secret
+ENV PORT=5000
 
-# Debug: Show environment and run build with verbose output
-RUN echo "Node version: $(node --version)" && \
-    echo "NPM version: $(npm --version)" && \
-    echo "NODE_ENV: $NODE_ENV" && \
-    echo "Starting build..." && \
-    npm run build && \
-    echo "Build completed. Checking dist folder:" && \
-    ls -la dist/ && \
-    echo "Dist contents:" && \
-    find dist -type f | head -10
+RUN npm run build
 
-# Production stage
-FROM nginx:alpine AS production
+EXPOSE 5000
 
-# Install curl for health checks
-RUN apk add --no-cache curl
-
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Debug: Check what was copied
-RUN echo "Files in nginx html directory:" && \
-    ls -la /usr/share/nginx/html/ && \
-    echo "Index.html exists:" && \
-    test -f /usr/share/nginx/html/index.html && echo "YES" || echo "NO"
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Create health endpoint
-RUN echo '{"status":"healthy","timestamp":"'$(date -Iseconds)'"}' > /usr/share/nginx/html/health.json
-
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost/health.json || exit 1
-
-# Expose port
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "run", "server"]
