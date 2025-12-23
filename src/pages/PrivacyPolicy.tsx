@@ -30,9 +30,26 @@ const PrivacyPolicy = () => {
                 <p className="text-muted-foreground">For FINONEST INDIA PVT LTD</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-8">Last Updated: November 25, 2025</p>
+            <p className="text-sm text-muted-foreground mb-8">Last Updated: December 23, 2025</p>
 
             <div className="prose prose-lg max-w-none">
+              <section className="mb-8 bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-primary" />
+                  Electronic Communications Consent
+                </h2>
+                <div className="space-y-4 text-muted-foreground">
+                  <p>
+                    When you visit the Finonest website or send emails to us, you are communicating with us electronically. We may communicate with you by email, SMS, RCS, or by posting notices on the website. For contractual purposes, you consent to receive communications from us electronically, and you agree that all agreements, notices, disclosures, and other communications that we provide to you electronically satisfy any legal requirement that such communications be in writing. This condition does not affect your statutory rights.
+                  </p>
+                  <p>
+                    You understand that once you register as a Finonest user on the Finonest platform, and upon placing any order on our website, we shall be entitled to use your registered mobile number on the website to send transaction-related SMS or RCS to you, irrespective of DND services being activated on your mobile. We may occasionally send promotional SMS or RCS to your registered mobile number.
+                  </p>
+                  <p className="font-semibold text-foreground">
+                    The customer hereby authorizes Finonest to send transactional SMS or RCS to their registered number, even if the number is registered under the DND ("Do Not Disturb") service.
+                  </p>
+                </div>
+              </section>
               <section className="mb-8">
                 <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
                   <Lock className="w-5 h-5 text-primary" />
@@ -49,17 +66,15 @@ const PrivacyPolicy = () => {
                   2. Information We Collect
                 </h2>
                 <div className="space-y-4 text-muted-foreground">
+                  <p>We collect various types of information to provide and improve our services, including:</p>
                   <p>
-                    <strong className="text-foreground">2.1. Personal Information:</strong> Name, date of birth, gender, address, email address, phone number, PAN card number, Aadhaar number (with consent), and photographs.
+                    <strong className="text-foreground">Personal identification information:</strong> Name, email address, phone number, etc.
                   </p>
                   <p>
-                    <strong className="text-foreground">2.2. Financial Information:</strong> Income details, employment information, bank statements, existing loan details, and credit history.
+                    <strong className="text-foreground">Financial information:</strong> Income details, credit history, etc.
                   </p>
                   <p>
-                    <strong className="text-foreground">2.3. Credit Information:</strong> Credit scores and reports from Credit Information Companies (CICs) like CIBIL, Experian, Equifax, and CRIF High Mark.
-                  </p>
-                  <p>
-                    <strong className="text-foreground">2.4. Technical Information:</strong> IP address, browser type, device information, and usage data when you access our website or services.
+                    <strong className="text-foreground">Usage data:</strong> How you interact with our website and services
                   </p>
                 </div>
               </section>
@@ -70,17 +85,21 @@ const PrivacyPolicy = () => {
                   3. How We Use Your Information
                 </h2>
                 <div className="space-y-4 text-muted-foreground">
+                  <p>We use the collected information for various purposes, including:</p>
                   <p>
-                    <strong className="text-foreground">3.1. Loan Processing:</strong> To process your loan applications and facilitate communication between you and our partner lenders.
+                    <strong className="text-foreground">Providing and maintaining our services</strong>
                   </p>
                   <p>
-                    <strong className="text-foreground">3.2. Credit Assessment:</strong> To assess your creditworthiness by obtaining your credit information from authorized CICs.
+                    <strong className="text-foreground">Improving and personalizing user experience</strong>
                   </p>
                   <p>
-                    <strong className="text-foreground">3.3. Communication:</strong> To send you updates about your application status, promotional offers, and important service notifications.
+                    <strong className="text-foreground">Processing loan applications and financial assessments</strong>
                   </p>
                   <p>
-                    <strong className="text-foreground">3.4. Compliance:</strong> To comply with legal obligations, prevent fraud, and maintain security.
+                    <strong className="text-foreground">Communicating with you about our services and updates</strong>
+                  </p>
+                  <p className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-blue-800">
+                    For more detailed information about our privacy practices, please contact our customer support team.
                   </p>
                 </div>
               </section>

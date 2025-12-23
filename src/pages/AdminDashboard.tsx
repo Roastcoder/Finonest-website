@@ -5,6 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
@@ -31,10 +36,33 @@ import {
   Phone,
   Mail,
   MapPin,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Image,
+  Type,
+  Blocks,
+  Layout,
+  Upload,
+  Copy,
+  Move,
+  ToggleLeft,
+  ToggleRight,
+  ColorWheel,
+  Monitor,
+  Smartphone,
+  Tablet
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { 
+  pagesAPI, 
+  componentsAPI, 
+  contentAPI, 
+  themeAPI, 
+  mediaAPI, 
+  analyticsAPI,
+  componentTemplates 
+} from "@/lib/adminAPI";
 
 interface LoanApplication {
   id: string;

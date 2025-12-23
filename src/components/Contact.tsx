@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Phone, Mail, MapPin, Send } from "lucide-react";
+import { Phone, Mail, MapPin, Send } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -11,13 +11,25 @@ const Contact = () => {
     loanType: "",
     amount: "",
     consentTerms: false,
+    consentDataProcessing: false,
+    consentCommunication: false,
     consentMarketing: false
   });
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+
+  const handleAgreeToAll = (checked: boolean) => {
+    setFormData({
+      ...formData,
+      consentTerms: checked,
+      consentDataProcessing: checked,
+      consentCommunication: checked
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.consentTerms) {
-      alert("Please accept the Terms & Conditions to proceed.");
+    if (!formData.consentTerms || !formData.consentDataProcessing || !formData.consentCommunication) {
+      alert("Please accept all required consents to proceed.");
       return;
     }
     console.log("Form submitted:", formData);
@@ -44,7 +56,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">Call Us</h4>
-                  <p className="text-muted-foreground text-sm">+91 98765 43210</p>
+                  <p className="text-muted-foreground text-sm">+91 94625 53887</p>
                   <p className="text-muted-foreground text-sm">Mon - Sat, 9am - 7pm</p>
                 </div>
               </div>
@@ -112,6 +124,7 @@ const Contact = () => {
                   value={formData.loanType}
                   onChange={(e) => setFormData({ ...formData, loanType: e.target.value })}
                   required
+                  aria-label="Select loan type"
                 >
                   <option value="">Select Loan Type</option>
                   <option value="home">Home Loan</option>
@@ -131,24 +144,56 @@ const Contact = () => {
 
               {/* Consent Checkboxes */}
               <div className="space-y-2 md:space-y-3 pt-1 md:pt-2">
+                <label className="flex items-start gap-2 cursor-pointer bg-primary/5 p-2 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
+                    checked={formData.consentTerms && formData.consentDataProcessing && formData.consentCommunication}
+                    onChange={(e) => handleAgreeToAll(e.target.checked)}
+                  />
+                  <span className="text-xs font-medium text-primary">
+                    Agree to All Terms & Consents
+                  </span>
+                </label>
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
                     checked={formData.consentTerms}
                     onChange={(e) => setFormData({ ...formData, consentTerms: e.target.checked })}
+                    required
                   />
                   <span className="text-[10px] md:text-xs text-muted-foreground">
-                    I agree to the{" "}
-                    <Link to="/terms-and-conditions" className="text-primary hover:underline">
-                      Terms & Conditions
-                    </Link>{" "}
-                    and{" "}
-                    <Link to="/privacy-policy" className="text-primary hover:underline">
-                      Privacy Policy
-                    </Link>
+                    <strong className="text-destructive">*</strong> I agree to the <button type="button" onClick={() => setShowTermsDialog(true)} className="text-primary hover:underline">Terms & Conditions</button> and acknowledge that FINONEST INDIA PVT LTD is a Direct Sales Agency (DSA) and not a lender.
                   </span>
                 </label>
+                
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
+                    checked={formData.consentDataProcessing}
+                    onChange={(e) => setFormData({ ...formData, consentDataProcessing: e.target.checked })}
+                    required
+                  />
+                  <span className="text-[10px] md:text-xs text-muted-foreground">
+                    <strong className="text-destructive">*</strong> I grant explicit consent to Finonest to collect, store, process, and share my Personal Information with Banks, NBFCs, and financial institutions for loan evaluation.
+                  </span>
+                </label>
+                
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
+                    checked={formData.consentCommunication}
+                    onChange={(e) => setFormData({ ...formData, consentCommunication: e.target.checked })}
+                    required
+                  />
+                  <span className="text-[10px] md:text-xs text-muted-foreground">
+                    <strong className="text-destructive">*</strong> I consent to receive communications from Finonest and/or Lenders via phone, SMS, email, and WhatsApp regarding my enquiry, loan products, and promotional materials, regardless of my DNCR/DND registry status.
+                  </span>
+                </label>
+                
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -157,7 +202,7 @@ const Contact = () => {
                     onChange={(e) => setFormData({ ...formData, consentMarketing: e.target.checked })}
                   />
                   <span className="text-[10px] md:text-xs text-muted-foreground">
-                    I consent to receive promotional offers and updates via SMS/WhatsApp/Email
+                    I would like to receive promotional offers and updates from Finonest and partner institutions.
                   </span>
                 </label>
               </div>
@@ -170,6 +215,42 @@ const Contact = () => {
           </div>
         </div>
       </div>
+      
+      {/* Terms Dialog */}
+      <Dialog open={showTermsDialog} onOpenChange={setShowTermsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Terms and Conditions of Service</DialogTitle>
+          </DialogHeader>
+          <div className="prose prose-sm max-w-none">
+            <p className="text-sm text-muted-foreground mb-4">For FINONEST INDIA PVT LTD - Last Updated: December 25, 2024</p>
+            
+            <h3 className="font-semibold mb-2">1. Acceptance of Terms</h3>
+            <p className="text-sm mb-4">By accessing or using the services provided by FINONEST INDIA PVT LTD, you agree to be bound by these Terms and Conditions.</p>
+            
+            <h3 className="font-semibold mb-2">2. Finonest's Role (DSA/Mediator)</h3>
+            <p className="text-sm mb-2"><strong>FINONEST INDIA PVT LTD IS NOT A LENDER.</strong> We are a Direct Sales Agency facilitating loan applications between you and Banks/NBFCs.</p>
+            
+            <h3 className="font-semibold mb-2">3. Data Processing Consent</h3>
+            <p className="text-sm mb-2">You grant explicit consent to collect, store, process, and share your Personal Information with Banks, NBFCs, and financial institutions for loan evaluation.</p>
+            
+            <h3 className="font-semibold mb-2">4. Communication Consent</h3>
+            <p className="text-sm mb-2">You consent to receive communications via phone, SMS, email, and WhatsApp regarding loan products and promotional materials, regardless of DND registry status.</p>
+            
+            <div className="bg-blue-50 p-3 rounded mt-4">
+              <p className="text-xs text-blue-800">
+                <strong>FINONEST INDIA PVT LTD</strong><br/>
+                3rd Floor, Besides Jaipur Hospital, BL Tower 1, Tonk Rd, Jaipur, Rajasthan 302018<br/>
+                Email: info@finonest.com
+              </p>
+            </div>
+            
+            <div className="mt-4">
+              <Button onClick={() => setShowTermsDialog(false)} className="w-full">I Understand</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

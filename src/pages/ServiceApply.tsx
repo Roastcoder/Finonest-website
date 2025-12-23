@@ -662,6 +662,7 @@ const ServiceApply = () => {
                         onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
                         className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                         required
+                        aria-label="Select employment type"
                       >
                         <option value="">Select Type</option>
                         <option value="salaried">Salaried</option>

@@ -28,7 +28,13 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminCMS from "./pages/AdminCMS";
+import AdminLogin from "./pages/AdminLogin";
+import DynamicPage from "./pages/DynamicPage";
+import IndexDynamic from "./pages/IndexDynamic";
 import Apply from "./pages/Apply";
+import ErrorBoundary from "./components/ErrorBoundary";
+import BankingPartnersPage from "./pages/BankingPartnersPage";
 import EMICalculatorPage from "./pages/EMICalculatorPage";
 
 const queryClient = new QueryClient();
@@ -57,13 +63,13 @@ const App = () => {
       <TooltipProvider>
         {isLoading && <LoadingScreen onLoadingComplete={handleLoadingComplete} />}
         {showContent && (
-          <>
+          <ErrorBoundary>
             <Toaster />
             <Sonner />
             <BrowserRouter>
               <ScrollToTop />
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<IndexDynamic />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/services" element={<Services />} />
@@ -86,13 +92,17 @@ const App = () => {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/cms" element={<AdminCMS />} />
+                <Route path="/page/:slug" element={<DynamicPage />} />
+                <Route path="/banking-partners" element={<BankingPartnersPage />} />
                 <Route path="/apply" element={<Apply />} />
                 <Route path="/emi-calculator" element={<EMICalculatorPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </>
+          </ErrorBoundary>
         )}
       </TooltipProvider>
     </QueryClientProvider>

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Loader2, CheckCircle } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { ArrowRight, Loader2, CheckCircle } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 const loanTypes = [
@@ -32,6 +33,12 @@ const Apply = () => {
     employmentType: "",
     monthlyIncome: "",
     notes: "",
+    consentTerms: false,
+    consentDataProcessing: false,
+    consentCreditCheck: false,
+    consentCommunication: false,
+    consentServiceFee: false,
+    consentMarketing: false
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -81,6 +88,17 @@ const Apply = () => {
     }
   };
 
+  const handleAgreeToAll = (checked: boolean) => {
+    setFormData({
+      ...formData,
+      consentTerms: checked,
+      consentDataProcessing: checked,
+      consentCreditCheck: checked,
+      consentCommunication: checked,
+      consentServiceFee: checked
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -91,6 +109,15 @@ const Apply = () => {
         variant: "destructive",
         title: "Missing Information",
         description: "Please fill in all required fields.",
+      });
+      return;
+    }
+
+    if (!formData.consentTerms || !formData.consentDataProcessing || !formData.consentCreditCheck || !formData.consentCommunication || !formData.consentServiceFee) {
+      toast({
+        variant: "destructive",
+        title: "Consent Required",
+        description: "Please accept all required consents to proceed.",
       });
       return;
     }
@@ -130,28 +157,32 @@ const Apply = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-6">
-        <div className="max-w-md text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-display font-bold text-foreground mb-4">
-            Application Submitted!
-          </h1>
-          <p className="text-muted-foreground mb-8">
-            Thank you for your loan application. Our team will review your details and 
-            contact you within 24 hours with the next steps.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild>
-              <Link to="/dashboard">Go to Dashboard</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/">Back to Home</Link>
-            </Button>
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6 pt-24">
+          <div className="max-w-md text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+              Application Submitted!
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              Thank you for your loan application. Our team will review your details and 
+              contact you within 24 hours with the next steps.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild>
+                <Link to="/dashboard">Go to Dashboard</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/">Back to Home</Link>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
@@ -162,19 +193,10 @@ const Apply = () => {
         <meta name="description" content="Apply for home loans, car loans, personal loans, and more with Finonest. Quick approval within 24 hours." />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-hero py-8 px-6">
+      <Navbar />
+      
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-6 pt-24">
         <div className="container max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <Link to="/">
-              <img src={logo} alt="Finonest" className="h-10 object-contain" />
-            </Link>
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
-          </div>
-
           {/* Form */}
           <div className="bg-card rounded-2xl border border-border shadow-xl p-8">
             <div className="text-center mb-8">
@@ -311,6 +333,98 @@ const Apply = () => {
                 />
               </div>
 
+              {/* Consent Checkboxes */}
+              <div className="space-y-4 pt-6 border-t border-border">
+                <div className="text-sm font-medium text-foreground mb-3">
+                  Required Consents:
+                </div>
+                
+                <label className="flex items-start gap-3 cursor-pointer bg-primary/5 p-3 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    checked={formData.consentTerms && formData.consentDataProcessing && formData.consentCreditCheck && formData.consentCommunication && formData.consentServiceFee}
+                    onChange={(e) => handleAgreeToAll(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-border"
+                  />
+                  <span className="text-sm font-medium text-primary">
+                    Agree to All Required Terms & Consents
+                  </span>
+                </label>
+                
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.consentTerms}
+                    onChange={(e) => setFormData({ ...formData, consentTerms: e.target.checked })}
+                    className="mt-1 w-4 h-4 rounded border-border"
+                    required
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    <strong className="text-destructive">*</strong> I agree to the <Link to="/terms" className="text-primary hover:underline">Terms and Conditions of Service</Link> and acknowledge that FINONEST INDIA PVT LTD is a Direct Sales Agency (DSA) and not a lender.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.consentDataProcessing}
+                    onChange={(e) => setFormData({ ...formData, consentDataProcessing: e.target.checked })}
+                    className="mt-1 w-4 h-4 rounded border-border"
+                    required
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    <strong className="text-destructive">*</strong> I grant explicit consent to Finonest to collect, store, process, analyze, and share my Personal Information with Banks, NBFCs, and other financial institutions for loan evaluation purposes.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.consentCreditCheck}
+                    onChange={(e) => setFormData({ ...formData, consentCreditCheck: e.target.checked })}
+                    className="mt-1 w-4 h-4 rounded border-border"
+                    required
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    <strong className="text-destructive">*</strong> I consent to Finonest accessing my Credit Information Report from Credit Information Companies (CIBIL, Experian, Equifax, etc.) for loan assessment.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.consentCommunication}
+                    onChange={(e) => setFormData({ ...formData, consentCommunication: e.target.checked })}
+                    className="mt-1 w-4 h-4 rounded border-border"
+                    required
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    <strong className="text-destructive">*</strong> I consent to receive communications from Finonest and/or Lenders via phone, SMS, email, and WhatsApp regarding my application, loan products, and promotional materials, regardless of my DNCR/DND registry status.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.consentServiceFee}
+                    onChange={(e) => setFormData({ ...formData, consentServiceFee: e.target.checked })}
+                    className="mt-1 w-4 h-4 rounded border-border"
+                    required
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    <strong className="text-destructive">*</strong> I understand that Finonest may charge a service or processing fee for mediation services and I agree to pay such fees as applicable.
+                  </span>
+                </label>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <p className="text-xs text-blue-800">
+                    <strong>FINONEST INDIA PVT LTD</strong><br/>
+                    3rd Floor, Besides Jaipur Hospital, BL Tower 1, Tonk Rd, Mahaveer Nagar, GopalPura Bypass, Jaipur, Rajasthan 302018<br/>
+                    Email: info@finonest.com
+                  </p>
+                </div>
+              </div>
+
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -321,14 +435,12 @@ const Apply = () => {
                   </>
                 )}
               </Button>
-
-              <p className="text-center text-muted-foreground text-xs">
-                By submitting, you agree to our Terms of Service and Privacy Policy.
-              </p>
             </form>
           </div>
         </div>
       </div>
+      
+      <Footer />
     </>
   );
 };

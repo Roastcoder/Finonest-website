@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Facebook, Twitter, Linkedin, Instagram, Youtube, ArrowUp, MapPin, Phone, Mail } from "lucide-react";
+import { Facebook, Twitter, Linkedin, Youtube, ArrowUp, MapPin } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+import ContactWidget from "@/components/ContactWidget";
 
 const Footer = () => {
   const scrollToTop = () => {
@@ -51,6 +52,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/banking-partners" className="text-sm text-background/70 hover:text-accent transition-colors">
+                  Banking Partners
+                </Link>
+              </li>
+              <li>
                 <Link to="/contact" className="text-sm text-background/70 hover:text-accent transition-colors">
                   Contact
                 </Link>
@@ -93,21 +99,11 @@ const Footer = () => {
           {/* Contact Info */}
           <div>
             <h4 className="font-display text-lg font-semibold mb-6">Contact Us</h4>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-accent" />
-                <a href="tel:+919876543210" className="text-sm text-background/70 hover:text-accent transition-colors">
-                  +91 98765 43210
-                </a>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-accent" />
-                <a href="mailto:info@finonest.com" className="text-sm text-background/70 hover:text-accent transition-colors">
-                  info@finonest.com
-                </a>
-              </li>
-            </ul>
-            <div className="mt-6">
+            <ContactWidget variant="vertical" className="mb-6" />
+            <div className="flex items-center gap-2 text-sm text-background/80 mb-6">
+              <span>info@finonest.com</span>
+            </div>
+            <div>
               <h5 className="text-sm font-medium mb-4">Follow Us</h5>
               <div className="flex gap-3">
                 <a href="#" className="w-9 h-9 rounded-full bg-background/10 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors">
@@ -118,9 +114,6 @@ const Footer = () => {
                 </a>
                 <a href="#" className="w-9 h-9 rounded-full bg-background/10 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors">
                   <Linkedin className="w-4 h-4" />
-                </a>
-                <a href="#" className="w-9 h-9 rounded-full bg-background/10 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors">
-                  <Instagram className="w-4 h-4" />
                 </a>
                 <a href="#" className="w-9 h-9 rounded-full bg-background/10 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors">
                   <Youtube className="w-4 h-4" />
