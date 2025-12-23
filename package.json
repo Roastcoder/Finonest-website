@@ -9,8 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node server/app.js",
-    "server:dev": "node --watch server/app.js"
+    "server": "node server/production.js",
+    "server:dev": "node --watch server/production.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -49,13 +49,19 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "input-otp": "^1.4.2",
+    "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.462.0",
+    "morgan": "^1.10.1",
     "mysql2": "^3.16.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
@@ -72,6 +78,7 @@
     "ts-node": "^10.9.2",
     "vaul": "^0.9.9",
     "vite-plugin-pwa": "^1.2.0",
+    "winston": "^3.19.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
