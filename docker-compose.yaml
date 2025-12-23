@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=vgc0o0gkw0cgwo0os0g0ksg0
+      - DB_PORT=3306
+      - DB_USER=admin
+      - DB_PASSWORD=Finonest@admin@root
+      - DB_NAME=Fino
+    restart: unless-stopped
+
   finonest-app:
     build:
       context: .
@@ -11,9 +26,9 @@ services:
       - "3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - VITE_SUPABASE_URL=https://placeholder.supabase.co
-      - VITE_SUPABASE_PUBLISHABLE_KEY=placeholder_key
+      - VITE_API_URL=http://backend:5000
+    depends_on:
+      - backend
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health.json"]
