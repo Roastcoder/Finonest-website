@@ -1,0 +1,19 @@
+{
+  "name": "finonest-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server/production.js",
+    "dev": "node --watch server/production.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.16.0"
+  }
+}
