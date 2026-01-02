@@ -1,86 +1,26 @@
-import { supabase } from '../integrations/supabase/client';
-
 // Dynamic Content Hook for Frontend Components
+// Note: This is a stub implementation since the actual CMS tables don't exist in the database yet
+
 export const useDynamicContent = () => {
-  const getContent = async (key: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('content_blocks')
-        .select('content')
-        .eq('key', key)
-        .eq('is_active', true)
-        .single();
-      
-      if (error) throw error;
-      return data?.content || {};
-    } catch (error) {
-      console.error(`Error fetching content for key: ${key}`, error);
-      return {};
-    }
+  const getContent = async (_key: string) => {
+    // Stub: CMS tables not yet created
+    console.log('CMS not configured - using default content');
+    return {};
   };
 
-  const getTheme = async (key: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('theme_settings')
-        .select('value')
-        .eq('key', key)
-        .single();
-      
-      if (error) throw error;
-      return data?.value?.value || '';
-    } catch (error) {
-      console.error(`Error fetching theme for key: ${key}`, error);
-      return '';
-    }
+  const getTheme = async (_key: string) => {
+    // Stub: Theme tables not yet created
+    return '';
   };
 
   const getAllThemeSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('theme_settings')
-        .select('*');
-      
-      if (error) throw error;
-      
-      const themeObj: Record<string, any> = {};
-      data?.forEach(setting => {
-        themeObj[setting.key] = setting.value?.value || setting.value;
-      });
-      
-      return themeObj;
-    } catch (error) {
-      console.error('Error fetching all theme settings:', error);
-      return {};
-    }
+    // Stub: Theme tables not yet created
+    return {};
   };
 
-  const getPageComponents = async (pageSlug: string) => {
-    try {
-      // First get the page
-      const { data: page, error: pageError } = await supabase
-        .from('pages')
-        .select('id')
-        .eq('slug', pageSlug)
-        .eq('is_active', true)
-        .single();
-      
-      if (pageError) throw pageError;
-      
-      // Then get components for this page
-      const { data: components, error: componentsError } = await supabase
-        .from('page_components')
-        .select('*')
-        .eq('page_id', page.id)
-        .eq('is_visible', true)
-        .order('order_index');
-      
-      if (componentsError) throw componentsError;
-      return components || [];
-    } catch (error) {
-      console.error(`Error fetching components for page: ${pageSlug}`, error);
-      return [];
-    }
+  const getPageComponents = async (_pageSlug: string) => {
+    // Stub: Page tables not yet created
+    return [];
   };
 
   return {
@@ -91,32 +31,15 @@ export const useDynamicContent = () => {
   };
 };
 
-// Real-time Content Updates
-export const subscribeToContentChanges = (callback: (payload: any) => void) => {
-  const subscription = supabase
-    .channel('content_changes')
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'content_blocks' }, 
-      callback
-    )
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'theme_settings' }, 
-      callback
-    )
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'page_components' }, 
-      callback
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(subscription);
-  };
+// Real-time Content Updates (stub)
+export const subscribeToContentChanges = (_callback: (payload: unknown) => void) => {
+  // Stub: CMS tables not yet created
+  return () => {};
 };
 
 // Component Templates for Dynamic Rendering
 export const componentRenderers = {
-  hero: (data: any, theme: any) => ({
+  hero: (data: Record<string, unknown>, theme: Record<string, unknown>) => ({
     type: 'hero',
     props: {
       title: data.title || 'Welcome',
@@ -129,7 +52,7 @@ export const componentRenderers = {
     }
   }),
 
-  services: (data: any, theme: any) => ({
+  services: (data: Record<string, unknown>, theme: Record<string, unknown>) => ({
     type: 'services',
     props: {
       title: data.title || 'Our Services',
@@ -139,7 +62,7 @@ export const componentRenderers = {
     }
   }),
 
-  testimonials: (data: any, theme: any) => ({
+  testimonials: (data: Record<string, unknown>, theme: Record<string, unknown>) => ({
     type: 'testimonials',
     props: {
       title: data.title || 'What Our Customers Say',
@@ -148,7 +71,7 @@ export const componentRenderers = {
     }
   }),
 
-  contact: (data: any, theme: any) => ({
+  contact: (data: Record<string, unknown>, theme: Record<string, unknown>) => ({
     type: 'contact',
     props: {
       title: data.title || 'Get In Touch',
@@ -157,7 +80,7 @@ export const componentRenderers = {
     }
   }),
 
-  stats: (data: any, theme: any) => ({
+  stats: (data: Record<string, unknown>, theme: Record<string, unknown>) => ({
     type: 'stats',
     props: {
       stats: data.stats || [],
@@ -166,7 +89,7 @@ export const componentRenderers = {
     }
   }),
 
-  text_block: (data: any, theme: any) => ({
+  text_block: (data: Record<string, unknown>, theme: Record<string, unknown>) => ({
     type: 'text_block',
     props: {
       content: data.content || '',
@@ -176,7 +99,7 @@ export const componentRenderers = {
     }
   }),
 
-  image_gallery: (data: any, theme: any) => ({
+  image_gallery: (data: Record<string, unknown>) => ({
     type: 'image_gallery',
     props: {
       images: data.images || [],
@@ -185,7 +108,7 @@ export const componentRenderers = {
     }
   }),
 
-  cta_banner: (data: any, theme: any) => ({
+  cta_banner: (data: Record<string, unknown>, theme: Record<string, unknown>) => ({
     type: 'cta_banner',
     props: {
       title: data.title || 'Ready to Get Started?',
@@ -198,230 +121,42 @@ export const componentRenderers = {
   })
 };
 
-// Advanced CMS Functions
+// Advanced CMS Functions (stubs - tables not yet created)
 export const advancedCMS = {
-  // Bulk operations
-  async bulkUpdateComponents(updates: Array<{id: string, data: any}>) {
-    try {
-      const promises = updates.map(update => 
-        supabase
-          .from('page_components')
-          .update({ component_data: update.data })
-          .eq('id', update.id)
-      );
-      
-      const results = await Promise.all(promises);
-      return { success: true, results };
-    } catch (error) {
-      return { success: false, error };
-    }
+  async bulkUpdateComponents(_updates: Array<{id: string, data: unknown}>) {
+    return { success: false, error: 'CMS tables not yet created' };
   },
 
-  // Page duplication
-  async duplicatePage(pageId: string, newSlug: string, newTitle: string) {
-    try {
-      // Get original page
-      const { data: originalPage } = await supabase
-        .from('pages')
-        .select('*')
-        .eq('id', pageId)
-        .single();
-
-      // Create new page
-      const { data: newPage, error: pageError } = await supabase
-        .from('pages')
-        .insert({
-          slug: newSlug,
-          title: newTitle,
-          meta_description: originalPage.meta_description
-        })
-        .select()
-        .single();
-
-      if (pageError) throw pageError;
-
-      // Get original components
-      const { data: originalComponents } = await supabase
-        .from('page_components')
-        .select('*')
-        .eq('page_id', pageId);
-
-      // Duplicate components
-      if (originalComponents?.length) {
-        const newComponents = originalComponents.map(comp => ({
-          page_id: newPage.id,
-          component_type: comp.component_type,
-          component_data: comp.component_data,
-          order_index: comp.order_index,
-          is_visible: comp.is_visible
-        }));
-
-        await supabase
-          .from('page_components')
-          .insert(newComponents);
-      }
-
-      return { success: true, page: newPage };
-    } catch (error) {
-      return { success: false, error };
-    }
+  async duplicatePage(_pageId: string, _newSlug: string, _newTitle: string) {
+    return { success: false, error: 'CMS tables not yet created' };
   },
 
-  // Component library management
-  async saveComponentTemplate(name: string, type: string, data: any) {
-    try {
-      const { data, error } = await supabase
-        .from('component_templates')
-        .insert({
-          name,
-          component_type: type,
-          template_data: data,
-          is_public: true
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, template: data };
-    } catch (error) {
-      return { success: false, error };
-    }
+  async saveComponentTemplate(_name: string, _type: string, _data: unknown) {
+    return { success: false, error: 'CMS tables not yet created' };
   },
 
-  // SEO management
-  async updatePageSEO(pageId: string, seoData: {
-    title?: string;
-    meta_description?: string;
-    meta_keywords?: string;
-    og_title?: string;
-    og_description?: string;
-    og_image?: string;
-  }) {
-    try {
-      const { data, error } = await supabase
-        .from('pages')
-        .update(seoData)
-        .eq('id', pageId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, page: data };
-    } catch (error) {
-      return { success: false, error };
-    }
+  async updatePageSEO(_pageId: string, _seoData: Record<string, string | undefined>) {
+    return { success: false, error: 'CMS tables not yet created' };
   },
 
-  // Analytics integration
-  async trackPageView(pageSlug: string, userAgent?: string, ip?: string) {
-    try {
-      await supabase
-        .from('page_analytics')
-        .insert({
-          page_slug: pageSlug,
-          user_agent: userAgent,
-          ip_address: ip,
-          viewed_at: new Date().toISOString()
-        });
-    } catch (error) {
-      console.error('Error tracking page view:', error);
-    }
+  async trackPageView(_pageSlug: string, _userAgent?: string, _ip?: string) {
+    // Stub: Analytics not yet configured
   },
 
-  // Content scheduling
-  async scheduleContent(contentId: string, publishAt: string, unpublishAt?: string) {
-    try {
-      const { data, error } = await supabase
-        .from('content_schedule')
-        .insert({
-          content_id: contentId,
-          publish_at: publishAt,
-          unpublish_at: unpublishAt,
-          status: 'scheduled'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, schedule: data };
-    } catch (error) {
-      return { success: false, error };
-    }
+  async scheduleContent(_contentId: string, _publishAt: string, _unpublishAt?: string) {
+    return { success: false, error: 'CMS tables not yet created' };
   },
 
-  // Multi-language support
-  async getTranslatedContent(key: string, language: string = 'en') {
-    try {
-      const { data, error } = await supabase
-        .from('content_translations')
-        .select('translated_content')
-        .eq('content_key', key)
-        .eq('language', language)
-        .single();
-
-      if (error) {
-        // Fallback to default language
-        const { data: fallback } = await supabase
-          .from('content_blocks')
-          .select('content')
-          .eq('key', key)
-          .single();
-        
-        return fallback?.content || {};
-      }
-
-      return data?.translated_content || {};
-    } catch (error) {
-      console.error('Error fetching translated content:', error);
-      return {};
-    }
+  async getTranslatedContent(_key: string, _language: string = 'en') {
+    return {};
   },
 
-  // Version control
-  async createContentVersion(contentId: string, data: any, comment?: string) {
-    try {
-      const { data: version, error } = await supabase
-        .from('content_versions')
-        .insert({
-          content_id: contentId,
-          version_data: data,
-          comment: comment || 'Auto-saved version',
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, version };
-    } catch (error) {
-      return { success: false, error };
-    }
+  async createContentVersion(_contentId: string, _data: unknown, _comment?: string) {
+    return { success: false, error: 'CMS tables not yet created' };
   },
 
-  async restoreContentVersion(versionId: string) {
-    try {
-      // Get version data
-      const { data: version } = await supabase
-        .from('content_versions')
-        .select('*')
-        .eq('id', versionId)
-        .single();
-
-      if (!version) throw new Error('Version not found');
-
-      // Update content with version data
-      const { data, error } = await supabase
-        .from('content_blocks')
-        .update({ content: version.version_data })
-        .eq('id', version.content_id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, content: data };
-    } catch (error) {
-      return { success: false, error };
-    }
+  async restoreContentVersion(_versionId: string) {
+    return { success: false, error: 'CMS tables not yet created' };
   }
 };
 

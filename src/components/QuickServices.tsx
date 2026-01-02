@@ -1,4 +1,4 @@
-import { Home, Car, Briefcase, CreditCard, Building, Landmark, ArrowRight } from "lucide-react";
+import { Home, Car, Briefcase, CreditCard, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const quickServices = [

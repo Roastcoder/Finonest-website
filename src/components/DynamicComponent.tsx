@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
 import { Star, Phone, Mail, MapPin, ArrowRight, CheckCircle } from 'lucide-react';
 
 interface DynamicComponentProps {

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, Gift, Shield, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import creditScoreBanner from "@/assets/credit-score-banner.jpg";
-import mascotAdvisor from "@/assets/mascot-advisor.png";
+
 const AdvertisementBanners = () => {
   return <section className="py-10 sm:py-16 bg-muted/30">
       <div className="container px-4 sm:px-6">
