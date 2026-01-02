@@ -4,21 +4,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  User, 
-  FileText, 
   LogOut, 
   Plus, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
   Home,
-  ChevronRight,
   Loader2,
-  Shield,
-  TrendingUp,
-  Phone,
-  Mail,
-  Edit
+  Shield
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 

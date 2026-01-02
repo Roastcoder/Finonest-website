@@ -24,31 +24,6 @@ const HealthCheck = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Simple health check - in production, add more comprehensive checks
-  const performHealthCheck = async () => {
-    try {
-      // Check if essential services are available
-      const checks = {
-        frontend: true,
-        database: true, // TODO: Add actual Supabase connection check
-        api: true // TODO: Add actual API health check
-      };
-
-      const allHealthy = Object.values(checks).every(check => check);
-      
-      return {
-        ...status,
-        status: allHealthy ? 'healthy' : 'unhealthy',
-        checks
-      };
-    } catch (error) {
-      return {
-        ...status,
-        status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  };
 
   return (
     <div className="p-4 bg-background text-foreground">
