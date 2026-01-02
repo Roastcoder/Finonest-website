@@ -6,9 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Eye,
   EyeOff,
-  Mail,
-  Lock,
-  User,
   ArrowRight,
   Loader2,
   CheckCircle,
@@ -18,7 +15,6 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
-import heroHomeLoan from "@/assets/hero-home-loan.jpg";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");

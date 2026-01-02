@@ -29,7 +29,6 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCMS from "./pages/AdminCMS";
 import AdminLogin from "./pages/AdminLogin";
-import DynamicPage from "./pages/DynamicPage";
 import IndexDynamic from "./pages/IndexDynamic";
 import Apply from "./pages/Apply";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -96,7 +95,6 @@ const App = () => {
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/cms" element={<AdminCMS />} />
-                <Route path="/page/:slug" element={<DynamicPage />} />
                 <Route path="/banking-partners" element={<BankingPartnersPage />} />
                 <Route path="/apply" element={<Apply />} />
                 <Route path="/emi-calculator" element={<EMICalculatorPage />} />

@@ -87,7 +87,7 @@ const ServiceApply = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [_submitted, _setSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showKYCSection, setShowKYCSection] = useState(false);
   
@@ -151,7 +151,7 @@ const ServiceApply = () => {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
       if (session?.user) {
         setFormData((prev) => ({
@@ -315,7 +315,7 @@ const ServiceApply = () => {
     );
   }
 
-  if (submitted) {
+  if (_submitted) {
     return (
       <>
         <Navbar />
