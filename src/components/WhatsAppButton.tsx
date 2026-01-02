@@ -1,9 +1,8 @@
-import { MessageCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useState } from "react";
 
 const WhatsAppButton = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const phoneNumber = "919462553887"; // Finonest support number
   const defaultMessage = "Hi Finonest Team, I need assistance.";
 
   const handleWhatsAppClick = () => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ChevronLeft, ChevronRight, Users, MapPin, Building2, IndianRupee, Home, Briefcase, Car, CreditCard } from "lucide-react";
+import { ArrowRight, Users, MapPin, Building2, IndianRupee, Home, Briefcase, Car, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroHomeLoan from "@/assets/hero-home-loan.jpg";
 import heroCarLoan from "@/assets/hero-car-loan.jpg";
@@ -102,8 +102,6 @@ const HeroSection = () => {
     setIsAutoPlaying(false);
     setTimeout(() => setIsAutoPlaying(true), 10000);
   };
-  const nextSlide = () => goToSlide((currentSlide + 1) % slides.length);
-  const prevSlide = () => goToSlide((currentSlide - 1 + slides.length) % slides.length);
   const slide = slides[currentSlide];
   return <section className="relative bg-gradient-to-b from-background via-background to-primary pt-20 md:pt-24 overflow-hidden">
       {/* Desktop Layout */}

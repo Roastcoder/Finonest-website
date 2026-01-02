@@ -21,174 +21,11 @@ export const adminAuth = {
   }
 };
 
-// Pages Management
-export const pagesAPI = {
+// Site Settings Management (uses existing site_settings table)
+export const settingsAPI = {
   async getAll() {
     const { data, error } = await supabase
-      .from('pages')
-      .select('*')
-      .order('created_at', { ascending: false });
-    return { data, error };
-  },
-
-  async getBySlug(slug: string) {
-    const { data, error } = await supabase
-      .from('pages')
-      .select('*')
-      .eq('slug', slug)
-      .single();
-    return { data, error };
-  },
-
-  async create(page: { slug: string; title: string; meta_description?: string }) {
-    const { data, error } = await supabase
-      .from('pages')
-      .insert(page)
-      .select()
-      .single();
-    return { data, error };
-  },
-
-  async update(id: string, updates: Partial<{ title: string; meta_description: string; is_active: boolean }>) {
-    const { data, error } = await supabase
-      .from('pages')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    return { data, error };
-  },
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('pages')
-      .delete()
-      .eq('id', id);
-    return { error };
-  }
-};
-
-// Page Components Management
-export const componentsAPI = {
-  async getByPageId(pageId: string) {
-    const { data, error } = await supabase
-      .from('page_components')
-      .select('*')
-      .eq('page_id', pageId)
-      .order('order_index', { ascending: true });
-    return { data, error };
-  },
-
-  async create(component: {
-    page_id: string;
-    component_type: string;
-    component_data: any;
-    order_index?: number;
-  }) {
-    const { data, error } = await supabase
-      .from('page_components')
-      .insert(component)
-      .select()
-      .single();
-    return { data, error };
-  },
-
-  async update(id: string, updates: {
-    component_data?: any;
-    order_index?: number;
-    is_visible?: boolean;
-  }) {
-    const { data, error } = await supabase
-      .from('page_components')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    return { data, error };
-  },
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('page_components')
-      .delete()
-      .eq('id', id);
-    return { error };
-  },
-
-  async reorder(components: { id: string; order_index: number }[]) {
-    const updates = components.map(comp => 
-      supabase
-        .from('page_components')
-        .update({ order_index: comp.order_index })
-        .eq('id', comp.id)
-    );
-    
-    const results = await Promise.all(updates);
-    return results;
-  }
-};
-
-// Content Blocks Management
-export const contentAPI = {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('content_blocks')
-      .select('*')
-      .order('key', { ascending: true });
-    return { data, error };
-  },
-
-  async getByKey(key: string) {
-    const { data, error } = await supabase
-      .from('content_blocks')
-      .select('*')
-      .eq('key', key)
-      .single();
-    return { data, error };
-  },
-
-  async create(content: {
-    key: string;
-    title: string;
-    content: any;
-    content_type?: string;
-  }) {
-    const { data, error } = await supabase
-      .from('content_blocks')
-      .insert(content)
-      .select()
-      .single();
-    return { data, error };
-  },
-
-  async update(id: string, updates: {
-    title?: string;
-    content?: any;
-    is_active?: boolean;
-  }) {
-    const { data, error } = await supabase
-      .from('content_blocks')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    return { data, error };
-  },
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('content_blocks')
-      .delete()
-      .eq('id', id);
-    return { error };
-  }
-};
-
-// Theme Settings Management
-export const themeAPI = {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('theme_settings')
+      .from('site_settings')
       .select('*')
       .order('category', { ascending: true });
     return { data, error };
@@ -196,118 +33,154 @@ export const themeAPI = {
 
   async getByCategory(category: string) {
     const { data, error } = await supabase
-      .from('theme_settings')
+      .from('site_settings')
       .select('*')
       .eq('category', category);
     return { data, error };
   },
 
-  async update(key: string, value: any) {
+  async getByKey(key: string) {
     const { data, error } = await supabase
-      .from('theme_settings')
-      .upsert({ key, value })
+      .from('site_settings')
+      .select('*')
+      .eq('setting_key', key)
+      .single();
+    return { data, error };
+  },
+
+  async update(id: string, updates: {
+    setting_value?: string;
+    description?: string;
+  }) {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .update(updates)
+      .eq('id', id)
       .select()
       .single();
     return { data, error };
   },
 
-  async bulkUpdate(settings: { key: string; value: any }[]) {
+  async upsert(setting: {
+    setting_key: string;
+    setting_value: string;
+    setting_type?: string;
+    category?: string;
+    description?: string;
+  }) {
     const { data, error } = await supabase
-      .from('theme_settings')
-      .upsert(settings)
-      .select();
+      .from('site_settings')
+      .upsert(setting, { onConflict: 'setting_key' })
+      .select()
+      .single();
     return { data, error };
   }
 };
 
-// Media Library Management
-export const mediaAPI = {
+// Loan Applications Management
+export const applicationsAPI = {
   async getAll() {
     const { data, error } = await supabase
-      .from('media_library')
+      .from('loan_applications')
       .select('*')
       .order('created_at', { ascending: false });
     return { data, error };
   },
 
-  async upload(file: File, altText?: string) {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `uploads/${fileName}`;
-
-    // Upload file to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('media')
-      .upload(filePath, file);
-
-    if (uploadError) return { data: null, error: uploadError };
-
-    // Save file info to database
+  async getById(id: string) {
     const { data, error } = await supabase
-      .from('media_library')
-      .insert({
-        filename: fileName,
-        original_name: file.name,
-        file_path: filePath,
-        file_size: file.size,
-        mime_type: file.type,
-        alt_text: altText || ''
-      })
-      .select()
+      .from('loan_applications')
+      .select('*')
+      .eq('id', id)
       .single();
-
     return { data, error };
   },
 
-  async delete(id: string) {
-    // Get file info first
-    const { data: fileData } = await supabase
-      .from('media_library')
-      .select('file_path')
+  async updateStatus(id: string, status: string, notes?: string) {
+    const { data, error } = await supabase
+      .from('loan_applications')
+      .update({ status, notes, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .select()
       .single();
+    return { data, error };
+  }
+};
 
-    if (fileData) {
-      // Delete from storage
-      await supabase.storage
-        .from('media')
-        .remove([fileData.file_path]);
-    }
-
-    // Delete from database
-    const { error } = await supabase
-      .from('media_library')
-      .delete()
-      .eq('id', id);
-
-    return { error };
+// User Profiles Management
+export const profilesAPI = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return { data, error };
   },
 
-  getPublicUrl(filePath: string) {
-    const { data } = supabase.storage
-      .from('media')
-      .getPublicUrl(filePath);
-    return data.publicUrl;
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    return { data, error };
   }
 };
 
 // Analytics and Stats
 export const analyticsAPI = {
   async getDashboardStats() {
-    const [pagesCount, componentsCount, contentCount, mediaCount] = await Promise.all([
-      supabase.from('pages').select('id', { count: 'exact' }),
-      supabase.from('page_components').select('id', { count: 'exact' }),
-      supabase.from('content_blocks').select('id', { count: 'exact' }),
-      supabase.from('media_library').select('id', { count: 'exact' })
+    const [applicationsCount, profilesCount, settingsCount] = await Promise.all([
+      supabase.from('loan_applications').select('id', { count: 'exact', head: true }),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      supabase.from('site_settings').select('id', { count: 'exact', head: true })
     ]);
 
     return {
-      pages: pagesCount.count || 0,
-      components: componentsCount.count || 0,
-      content: contentCount.count || 0,
-      media: mediaCount.count || 0
+      applications: applicationsCount.count || 0,
+      profiles: profilesCount.count || 0,
+      settings: settingsCount.count || 0
     };
   }
+};
+
+// Legacy exports for backward compatibility (now empty stubs)
+export const pagesAPI = {
+  async getAll() { return { data: [], error: null }; },
+  async getBySlug(_slug: string) { return { data: null, error: null }; },
+  async create(_page: unknown) { return { data: null, error: null }; },
+  async update(_id: string, _updates: unknown) { return { data: null, error: null }; },
+  async delete(_id: string) { return { error: null }; }
+};
+
+export const componentsAPI = {
+  async getByPageId(_pageId: string) { return { data: [], error: null }; },
+  async create(_component: unknown) { return { data: null, error: null }; },
+  async update(_id: string, _updates: unknown) { return { data: null, error: null }; },
+  async delete(_id: string) { return { error: null }; },
+  async reorder(_components: unknown[]) { return []; }
+};
+
+export const contentAPI = {
+  async getAll() { return { data: [], error: null }; },
+  async getByKey(_key: string) { return { data: null, error: null }; },
+  async create(_content: unknown) { return { data: null, error: null }; },
+  async update(_id: string, _updates: unknown) { return { data: null, error: null }; },
+  async delete(_id: string) { return { error: null }; }
+};
+
+export const themeAPI = {
+  async getAll() { return { data: [], error: null }; },
+  async getByCategory(_category: string) { return { data: [], error: null }; },
+  async update(_key: string, _value: unknown) { return { data: null, error: null }; },
+  async bulkUpdate(_settings: unknown[]) { return { data: [], error: null }; }
+};
+
+export const mediaAPI = {
+  async getAll() { return { data: [], error: null }; },
+  async upload(_file: File, _altText?: string) { return { data: null, error: null }; },
+  async delete(_id: string) { return { error: null }; },
+  getPublicUrl(_filePath: string) { return ''; }
 };
 
 // Component Templates

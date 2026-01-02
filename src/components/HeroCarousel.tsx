@@ -4,7 +4,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import heroHomeLoan from "@/assets/hero-home-loan.jpg";
 import heroCarLoan from "@/assets/hero-car-loan.jpg";
 import heroBusinessLoan from "@/assets/hero-business-loan.jpg";
-import mascotAdvisor from "@/assets/mascot-advisor.png";
+
 const slides = [{
   id: 1,
   title: "Own Your Dream Home",

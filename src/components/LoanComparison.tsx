@@ -113,7 +113,7 @@ const LoanComparison = () => {
         {/* Comparison Cards - Horizontal scroll on mobile */}
         <div className="overflow-x-auto -mx-4 px-4 pb-4 md:overflow-visible md:mx-0 md:px-0 md:pb-0">
           <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 min-w-max md:min-w-0">
-          {loanTypes.map((loan, index) => (
+          {loanTypes.map((loan) => (
             <div
               key={loan.name}
               className={`relative card-hover p-4 md:p-6 w-[260px] md:w-auto flex-shrink-0 ${
