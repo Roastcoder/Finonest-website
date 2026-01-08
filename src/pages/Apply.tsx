@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { useNavigate, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { applicationsAPI, profileAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 const loanTypes = [
   { value: "Home Loan", icon: "🏠" },
@@ -21,7 +21,7 @@ const loanTypes = [
 ];
 
 const Apply = () => {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { user, isLoggedIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,49 +44,32 @@ const Apply = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-        setFormData((prev) => ({
-          ...prev,
-          email: session.user.email || "",
-        }));
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-        setFormData((prev) => ({
-          ...prev,
-          email: session.user.email || "",
-        }));
-        fetchProfile(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("user_id", userId)
-      .single();
-
-    if (data) {
+    if (!isLoggedIn) {
+      navigate("/auth");
+      return;
+    }
+    
+    if (user) {
       setFormData((prev) => ({
         ...prev,
-        fullName: data.full_name || "",
-        phone: data.phone || "",
+        email: user.email || "",
+        fullName: user.fullName || "",
       }));
+      
+      // Fetch profile data
+      profileAPI.get().then(({ data }) => {
+        if (data) {
+          setFormData((prev) => ({
+            ...prev,
+            fullName: data.full_name || prev.fullName,
+            phone: data.phone || "",
+          }));
+        }
+      }).catch(() => {
+        // Profile fetch failed, continue with user data
+      });
     }
-  };
+  }, [isLoggedIn, user, navigate]);
 
   const handleAgreeToAll = (checked: boolean) => {
     setFormData({
@@ -102,7 +85,7 @@ const Apply = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) return;
+    if (!isLoggedIn) return;
 
     if (!formData.loanType || !formData.amount || !formData.fullName || !formData.phone) {
       toast({
@@ -125,30 +108,27 @@ const Apply = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("loan_applications").insert({
-        user_id: user.id,
-        loan_type: formData.loanType,
+      await applicationsAPI.submit({
+        loanType: formData.loanType,
         amount: parseFloat(formData.amount),
-        full_name: formData.fullName,
+        fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
-        employment_type: formData.employmentType || null,
-        monthly_income: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : null,
-        notes: formData.notes || null,
+        employmentType: formData.employmentType || undefined,
+        monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : undefined,
+        notes: formData.notes || undefined,
       });
-
-      if (error) throw error;
 
       setSubmitted(true);
       toast({
         title: "Application Submitted!",
         description: "We'll review your application and get back to you within 24 hours.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to submit application. Please try again.",
+        description: error.message || "Failed to submit application. Please try again.",
       });
     } finally {
       setLoading(false);

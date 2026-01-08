@@ -1,8 +1,7 @@
 import { Home, Calculator, CreditCard, User, Phone, X, Building2, Car, Wallet, Briefcase, FileText, CarFront, GraduationCap, LogIn } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User as SupabaseUser } from "@supabase/supabase-js";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const getNavItems = (isLoggedIn: boolean) => [
   {
@@ -51,21 +50,9 @@ const serviceItems = [
 const BottomNavigation = () => {
   const location = useLocation();
   const [showServices, setShowServices] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { isLoggedIn } = useAuth();
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const navItems = getNavItems(!!user);
+  const navItems = getNavItems(isLoggedIn);
 
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";

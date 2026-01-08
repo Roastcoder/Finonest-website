@@ -16,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { applicationsAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Car, 
@@ -45,6 +46,7 @@ import serviceCarLoan from "@/assets/service-car-loan.jpg";
 const UsedCarLoan = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -72,9 +74,7 @@ const UsedCarLoan = () => {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
+      if (!isLoggedIn) {
         toast({
           title: "Login Required",
           description: "Please login to submit a loan application.",
@@ -84,19 +84,16 @@ const UsedCarLoan = () => {
         return;
       }
       
-      const { error } = await supabase.from("loan_applications").insert({
-        user_id: user.id,
-        loan_type: "Used Car Loan",
+      await applicationsAPI.submit({
+        loanType: "Used Car Loan",
         amount: parseFloat(formData.loanAmount) || 0,
-        full_name: formData.fullName,
+        fullName: formData.fullName,
         phone: formData.phone,
         email: formData.email,
-        employment_type: formData.employmentType,
-        monthly_income: parseFloat(formData.monthlyIncome) || 0,
+        employmentType: formData.employmentType,
+        monthlyIncome: parseFloat(formData.monthlyIncome) || 0,
         notes: `City: ${formData.city}, Car Age: ${formData.carAge} years, Notes: ${formData.additionalNotes}`
       });
-
-      if (error) throw error;
 
       // Redirect to success page
       navigate(`/form-success?service=${encodeURIComponent("Used Car Loan")}&name=${encodeURIComponent(formData.fullName)}`);
@@ -393,201 +390,183 @@ const UsedCarLoan = () => {
         </section>
 
         {/* Application Form */}
-        <section id="apply-form" className="py-12 md:py-16 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <section id="apply-form" className="py-12 md:py-16 bg-gradient-to-b from-muted/30 to-background">
           <div className="container px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-8 md:mb-12">
-                <span className="inline-block px-3 md:px-4 py-1.5 md:py-2 bg-primary/10 text-primary rounded-full text-xs md:text-sm font-medium mb-3 md:mb-4">
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <span className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
                   Quick Application
                 </span>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground mb-3 md:mb-4">
+                <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-3">
                   Apply for Used Car Loan
                 </h2>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  Fill in your details and our loan expert will contact you within 24 hours
+                <p className="text-muted-foreground">
+                  Fill the form below and our expert will call you within 30 minutes
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="bg-card p-5 md:p-8 rounded-2xl border border-border shadow-lg">
-                <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-sm md:text-base">Full Name *</Label>
-                    <Input
-                      id="fullName"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      placeholder="Enter your full name"
-                      required
-                      className="h-10 md:h-11"
-                    />
+              <div className="bg-card rounded-2xl border border-border shadow-xl p-6 md:p-8">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Input
+                        id="fullName"
+                        name="fullName"
+                        placeholder="Enter your full name"
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="+91 98765 43210"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City *</Label>
+                      <Input
+                        id="city"
+                        name="city"
+                        placeholder="Your city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Employment Type *</Label>
+                      <Select onValueChange={(value) => handleSelectChange("employmentType", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="salaried">Salaried</SelectItem>
+                          <SelectItem value="self-employed">Self-Employed</SelectItem>
+                          <SelectItem value="business">Business Owner</SelectItem>
+                          <SelectItem value="professional">Professional</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="monthlyIncome">Monthly Income (₹) *</Label>
+                      <Input
+                        id="monthlyIncome"
+                        name="monthlyIncome"
+                        type="number"
+                        placeholder="50000"
+                        value={formData.monthlyIncome}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="loanAmount">Loan Amount Required (₹) *</Label>
+                      <Input
+                        id="loanAmount"
+                        name="loanAmount"
+                        type="number"
+                        placeholder="500000"
+                        value={formData.loanAmount}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Car Age (Years)</Label>
+                      <Select onValueChange={(value) => handleSelectChange("carAge", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select car age" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 Year</SelectItem>
+                          <SelectItem value="2">2 Years</SelectItem>
+                          <SelectItem value="3">3 Years</SelectItem>
+                          <SelectItem value="4">4 Years</SelectItem>
+                          <SelectItem value="5">5 Years</SelectItem>
+                          <SelectItem value="6">6+ Years</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm md:text-base">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="Enter 10-digit mobile number"
-                      required
-                      className="h-10 md:h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm md:text-base">Email Address *</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="Enter your email"
-                      required
-                      className="h-10 md:h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="city" className="text-sm md:text-base">City *</Label>
-                    <Input
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      placeholder="Enter your city"
-                      required
-                      className="h-10 md:h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="employmentType" className="text-sm md:text-base">Employment Type *</Label>
-                    <Select value={formData.employmentType} onValueChange={(value) => handleSelectChange("employmentType", value)}>
-                      <SelectTrigger className="h-10 md:h-11">
-                        <SelectValue placeholder="Select employment type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="salaried">Salaried</SelectItem>
-                        <SelectItem value="self-employed">Self Employed</SelectItem>
-                        <SelectItem value="business">Business Owner</SelectItem>
-                        <SelectItem value="professional">Professional</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="monthlyIncome" className="text-sm md:text-base">Monthly Income (₹) *</Label>
-                    <Input
-                      id="monthlyIncome"
-                      name="monthlyIncome"
-                      type="number"
-                      value={formData.monthlyIncome}
-                      onChange={handleInputChange}
-                      placeholder="Enter monthly income"
-                      required
-                      className="h-10 md:h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="loanAmount" className="text-sm md:text-base">Loan Amount Required (₹) *</Label>
-                    <Input
-                      id="loanAmount"
-                      name="loanAmount"
-                      type="number"
-                      value={formData.loanAmount}
-                      onChange={handleInputChange}
-                      placeholder="Enter loan amount"
-                      required
-                      className="h-10 md:h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="carAge" className="text-sm md:text-base">Car Age (Years) *</Label>
-                    <Select value={formData.carAge} onValueChange={(value) => handleSelectChange("carAge", value)}>
-                      <SelectTrigger className="h-10 md:h-11">
-                        <SelectValue placeholder="Select car age" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0-1">0-1 Years</SelectItem>
-                        <SelectItem value="1-3">1-3 Years</SelectItem>
-                        <SelectItem value="3-5">3-5 Years</SelectItem>
-                        <SelectItem value="5-7">5-7 Years</SelectItem>
-                        <SelectItem value="7-10">7-10 Years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="additionalNotes" className="text-sm md:text-base">Additional Notes (Optional)</Label>
+                    <Label htmlFor="additionalNotes">Additional Notes (Optional)</Label>
                     <Textarea
                       id="additionalNotes"
                       name="additionalNotes"
+                      placeholder="Any specific requirements or questions..."
                       value={formData.additionalNotes}
                       onChange={handleInputChange}
-                      placeholder="Any specific requirements or car model you're looking for?"
                       rows={3}
                     />
                   </div>
-                </div>
 
-                <Button 
-                  type="submit" 
-                  size="lg" 
-                  className="w-full mt-6 md:mt-8"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Submit Application
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </>
-                  )}
-                </Button>
+                  <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        Submit Application
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </>
+                    )}
+                  </Button>
 
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                  By submitting, you agree to our Terms of Service and Privacy Policy
-                </p>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-12 md:py-16 bg-primary text-primary-foreground">
-          <div className="container px-4">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-8 text-center lg:text-left">
-              <div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mb-3 md:mb-4">
-                  Ready to Drive Your Dream Car?
-                </h2>
-                <p className="text-primary-foreground/80 max-w-xl text-sm md:text-base">
-                  Get pre-approved for your used car loan in minutes. Our experts will 
-                  help you find the best deal from 35+ partner banks.
-                </p>
+                  <p className="text-xs text-center text-muted-foreground">
+                    By submitting, you agree to our{" "}
+                    <a href="/terms" className="text-primary hover:underline">Terms</a> and{" "}
+                    <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+                  </p>
+                </form>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full sm:w-auto">
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto" asChild>
-                  <a href="#apply-form">
-                    Apply Now
-                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-2" />
-                  </a>
-                </Button>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10" asChild>
-                  <a href="/emi-calculator">
-                    <Calculator className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                    Calculate EMI
-                  </a>
-                </Button>
+
+              {/* Trust Badges */}
+              <div className="flex flex-wrap justify-center gap-6 mt-8">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Shield className="w-5 h-5 text-primary" />
+                  100% Secure
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calculator className="w-5 h-5 text-primary" />
+                  Free Service
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="w-5 h-5 text-primary" />
+                  24hr Response
+                </div>
               </div>
             </div>
           </div>
