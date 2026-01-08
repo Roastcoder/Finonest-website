@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Facebook, Twitter, Linkedin, Youtube, ArrowUp, MapPin } from "lucide-react";
+import { Facebook, Twitter, Linkedin, Youtube, ArrowUp, MapPin, Star } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import ContactWidget from "@/components/ContactWidget";
 
@@ -138,6 +138,17 @@ const Footer = () => {
                   <Youtube className="w-4 h-4" />
                 </a>
               </div>
+            </div>
+            <div className="mt-4">
+              <a 
+                href="https://search.google.com/local/writereview?placeid=ChIJI1TNZRqzbTkRo9RLFM5zasw" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors text-sm font-medium"
+              >
+                <Star className="w-4 h-4" />
+                Leave a Review on Google
+              </a>
             </div>
           </div>
         </div>
