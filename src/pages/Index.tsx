@@ -5,6 +5,7 @@ import Services from "@/components/Services";
 import ProcessSteps from "@/components/ProcessSteps";
 import WhyUs from "@/components/WhyUs";
 import Testimonials from "@/components/Testimonials";
+import GoogleReviews from "@/components/GoogleReviews";
 import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
@@ -40,6 +41,9 @@ const Index = () => {
       </AnimateOnScroll>
       <AnimateOnScroll animation="fade-up">
         <Testimonials />
+      </AnimateOnScroll>
+      <AnimateOnScroll animation="fade-up">
+        <GoogleReviews />
       </AnimateOnScroll>
       <AnimateOnScroll animation="fade-up">
         <FAQ />
