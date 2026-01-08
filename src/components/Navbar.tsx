@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronRight, ChevronDown, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { User as SupabaseUser } from "@supabase/supabase-js";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,21 +16,9 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { user, isLoggedIn, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -88,6 +75,11 @@ const Navbar = () => {
 
   const isActive = (href: string) => location.pathname === href;
 
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? "bg-card/95 backdrop-blur-lg py-3 shadow-lg border-b border-border" : "py-4 bg-white"}`}>
       <div className="container mx-auto px-6 flex items-center justify-between">
@@ -134,7 +126,7 @@ const Navbar = () => {
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
-          {user ? (
+          {isLoggedIn && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 px-3 py-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors">
@@ -160,10 +152,7 @@ const Navbar = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer text-destructive focus:text-destructive"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    navigate('/');
-                  }}
+                  onClick={handleLogout}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
@@ -231,7 +220,7 @@ const Navbar = () => {
             </div>
           ))}
           <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-border">
-            {user ? (
+            {isLoggedIn && user ? (
               <>
                 <Button variant="ghost" className="w-full justify-center" asChild>
                   <Link to="/dashboard">
@@ -242,10 +231,9 @@ const Navbar = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-center text-destructive border-destructive/30 hover:bg-destructive/10"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
+                  onClick={() => {
+                    handleLogout();
                     setIsMobileMenuOpen(false);
-                    navigate('/');
                   }}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
