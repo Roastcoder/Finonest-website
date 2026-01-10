@@ -42,18 +42,32 @@ const About = () => {
   }
 
   if (!pageData) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Page Not Found</h1>
-            <p className="text-muted-foreground">The about page content is not available.</p>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
+    // Fallback content when CMS is not available
+    const fallbackContent = {
+      title: "About Us - Finonest",
+      blocks: [
+        {
+          type: 'hero',
+          props: {
+            title: 'About Finonest',
+            subtitle: 'Your Trusted Financial Partner',
+            description: 'We are committed to simplifying your financial journey with transparency, speed, and personalized solutions.'
+          }
+        },
+        {
+          type: 'content',
+          props: {
+            title: 'Our Story',
+            content: '<div class="prose max-w-none"><p>Finonest is your trusted partner for all financial needs. We simplify the loan process with transparency, speed, and personalized solutions.</p><p>With over 50+ banking partners and a team of experienced professionals, we help you find the best financial products tailored to your needs.</p><p>Located in Jaipur, Rajasthan, we serve customers across India with our comprehensive range of financial services including home loans, personal loans, car loans, and credit cards.</p></div>'
+          }
+        }
+      ],
+      seo: {
+        metaTitle: 'About Finonest - Your Trusted Financial Partner',
+        metaDescription: 'Learn about Finonest, your trusted partner for loans and financial services. 50+ banking partners, transparent process, quick approval.'
+      }
+    };
+    setPageData(fallbackContent);
   }
 
   return (
