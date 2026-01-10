@@ -160,5 +160,3 @@ export const advancedCMS = {
   }
 };
 
-// Export all APIs
-export * from './adminAPI';
