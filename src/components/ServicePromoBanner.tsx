@@ -1,80 +1,15 @@
-import { useState, useEffect } from "react";
-import { ArrowRight, Car, CheckCircle, Clock, BadgePercent, Shield, Loader2 } from "lucide-react";
+import { ArrowRight, Car, CheckCircle, Clock, BadgePercent, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { publicCMSAPI } from "@/lib/api";
-
-interface Service {
-  _id: string;
-  slug: string;
-  title: string;
-  shortDescription?: string;
-  description?: string;
-  heroImage?: { url?: string; altText?: string };
-  rate?: string;
-  features?: { title: string; description?: string }[];
-}
+import serviceCarLoan from "@/assets/service-car-loan.jpg";
 
 const ServicePromoBanner = () => {
-  const [service, setService] = useState<Service | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadFeaturedService = async () => {
-      try {
-        setLoading(true);
-        const res = await publicCMSAPI.listServices({ featured: true, limit: 1 });
-        if (res.status === 'ok' && res.data?.items && res.data.items.length > 0) {
-          setService(res.data.items[0]);
-        }
-      } catch (error) {
-        console.error('Failed to load featured service:', error);
-        setService(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadFeaturedService();
-  }, []);
-
-  // Icon mapping for features
-  const iconMap: Record<string, any> = {
-    rate: BadgePercent,
-    rates: BadgePercent,
-    approval: Clock,
-    clock: Clock,
-    partners: Shield,
-    shield: Shield,
-    documentation: CheckCircle,
-    docs: CheckCircle,
-    check: CheckCircle,
-  };
-
-  const getIcon = (text: string) => {
-    const lower = text.toLowerCase();
-    for (const [key, Icon] of Object.entries(iconMap)) {
-      if (lower.includes(key)) {
-        return Icon;
-      }
-    }
-    return CheckCircle;
-  };
-
-  if (loading) {
-    return (
-      <section className="py-10 sm:py-16 relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (!service) {
-    return null; // Don't render if no featured service
-  }
+  const features = [
+    { icon: BadgePercent, text: "Rates from 7.5% p.a." },
+    { icon: Clock, text: "24-Hour Approval" },
+    { icon: Shield, text: "35+ Bank Partners" },
+    { icon: CheckCircle, text: "Minimal Documentation" },
+  ];
 
   return (
     <section className="py-10 sm:py-16 relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/10">
@@ -92,36 +27,30 @@ const ServicePromoBanner = () => {
             </div>
             
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
-              <span className="text-gradient-primary">{service.title}</span>
+              <span className="text-gradient-primary">Used Car Loan</span>
               <br />
               <span className="text-foreground">Made Simple & Fast</span>
             </h2>
             
-            {service.shortDescription || service.description ? (
-              <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 leading-relaxed">
-                {service.shortDescription || service.description}
-              </p>
-            ) : null}
+            <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 leading-relaxed">
+              India's most trusted used car financing partner. Get instant approval with competitive rates 
+              and drive your dream car today. Up to ₹1.5 Crores financing available.
+            </p>
             
             {/* Features Grid */}
-            {service.features && service.features.length > 0 && (
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6 sm:mb-8">
-                {service.features.slice(0, 4).map((feature, index) => {
-                  const Icon = getIcon(feature.title);
-                  return (
-                    <div 
-                      key={index}
-                      className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-card/50 border border-border/50"
-                    >
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                      </div>
-                      <span className="text-xs sm:text-sm font-medium text-foreground">{feature.title}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6 sm:mb-8">
+              {features.map((feature, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-card/50 border border-border/50"
+                >
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <feature.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-medium text-foreground">{feature.text}</span>
+                </div>
+              ))}
+            </div>
             
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-3 sm:gap-4">
@@ -131,7 +60,7 @@ const ServicePromoBanner = () => {
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
-              <Link to={`/services/${service.slug}`}>
+              <Link to="/services/used-car-loan">
                 <Button size="default" variant="outline" className="gap-2 text-sm sm:text-base">
                   Learn More
                 </Button>
@@ -142,28 +71,41 @@ const ServicePromoBanner = () => {
           {/* Image */}
           <div className="order-1 lg:order-2 relative">
             <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl">
-              {service.heroImage?.url ? (
-                <img 
-                  src={service.heroImage.url} 
-                  alt={service.heroImage.altText || service.title} 
-                  className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover"
-                />
-              ) : (
-                <div className="w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-gradient-to-br from-primary/20 to-accent/20" />
-              )}
+              <img 
+                src={serviceCarLoan} 
+                alt="Used Car Loan" 
+                className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-primary/30 to-transparent" />
               
               {/* Stats overlay - Responsive */}
-              {service.rate && (
-                <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 right-3 sm:right-6">
-                  <div className="flex justify-between items-end gap-2">
-                    <div className="glass rounded-lg sm:rounded-xl px-2 sm:px-4 py-1.5 sm:py-3">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Starting Rate</p>
-                      <p className="text-lg sm:text-2xl font-display font-bold text-gradient-primary">{service.rate}</p>
-                    </div>
+              <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 right-3 sm:right-6">
+                <div className="flex justify-between items-end gap-2">
+                  <div className="glass rounded-lg sm:rounded-xl px-2 sm:px-4 py-1.5 sm:py-3">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Starting Rate</p>
+                    <p className="text-lg sm:text-2xl font-display font-bold text-gradient-primary">7.5%</p>
+                  </div>
+                  <div className="glass rounded-lg sm:rounded-xl px-2 sm:px-4 py-1.5 sm:py-3 hidden sm:block">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Max Tenure</p>
+                    <p className="text-lg sm:text-2xl font-display font-bold text-foreground">7 Years</p>
+                  </div>
+                  <div className="glass rounded-lg sm:rounded-xl px-2 sm:px-4 py-1.5 sm:py-3">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Up to</p>
+                    <p className="text-lg sm:text-2xl font-display font-bold text-gradient-primary">₹1.5 Cr</p>
                   </div>
                 </div>
-              )}
+              </div>
+            </div>
+            
+            {/* Floating badge - Smaller on mobile */}
+            <div className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 lg:top-8 lg:-right-8 animate-bounce-slow">
+              <div className="bg-gradient-primary rounded-full p-2 sm:p-4 shadow-lg">
+                <div className="text-center text-primary-foreground">
+                  <p className="text-[8px] sm:text-xs font-medium">EMI from</p>
+                  <p className="text-sm sm:text-lg font-bold">₹1,599</p>
+                  <p className="text-[8px] sm:text-xs opacity-80">per lakh</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

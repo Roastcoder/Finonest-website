@@ -3,18 +3,12 @@ import { Helmet } from "react-helmet";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { isAuthenticated, getCurrentUser, authAPI } from "@/lib/api";
 import { 
   LogOut, 
   Plus, 
   Home,
   Loader2,
-  Shield,
-  User,
-  CreditCard,
-  Calculator,
-  FileText,
-  Settings
+  Shield
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
@@ -25,22 +19,25 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    const token = localStorage.getItem('token');
+    if (!token) {
       navigate('/auth');
       return;
     }
     
-    const user = getCurrentUser();
-    if (user) {
-      setUser(user);
-    } else {
+    // Decode token to get user info
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      setUser(payload);
+    } catch (error) {
+      localStorage.removeItem('token');
       navigate('/auth');
     }
     setLoading(false);
   }, [navigate]);
 
-  const handleLogout = async () => {
-    await authAPI.logout();
+  const handleLogout = () => {
+    localStorage.removeItem('token');
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
@@ -69,12 +66,6 @@ const Dashboard = () => {
               <img src={logo} alt="Finonest" className="h-10 object-contain" />
             </Link>
             <div className="flex items-center gap-4">
-              {user?.email === 'admin@finonest.com' && (
-                <Link to="/admin/cms" className="text-primary hover:text-primary/80 flex items-center gap-1 text-sm font-medium">
-                  <Shield className="w-4 h-4" />
-                  Admin Panel
-                </Link>
-              )}
               <Link to="/" className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm">
                 <Home className="w-4 h-4" />
                 Home

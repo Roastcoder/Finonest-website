@@ -1,8 +1,0 @@
-{
-  "name": "finonest-seeder",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "seed": "node seedAll.js"
-  }
-}

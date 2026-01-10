@@ -1,49 +1,41 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Car, Home, CreditCard, TrendingUp, Wallet, Building, ChevronRight, ChevronLeft } from "lucide-react";
-import { publicCMSAPI } from "@/lib/api";
-
-interface NavLinkItem {
-  _id: string;
-  label: string;
-  href: string;
-  target?: '_self' | '_blank';
-  highlight?: boolean;
-}
-
-const iconMap: Record<string, any> = {
-  home: Home,
-  "home-loan": Home,
-  car: Car,
-  "car-loan": Car,
-  credit: CreditCard,
-  "credit-card": CreditCard,
-  personal: Wallet,
-  "personal-loan": Wallet,
-  business: Building,
-  "business-loan": Building,
-  score: TrendingUp,
-  contact: TrendingUp,
-};
+const quickLinks = [{
+  icon: Home,
+  text: "Apply Home Loan",
+  href: "/services/home-loan",
+  color: "bg-blue-500"
+}, {
+  icon: Car,
+  text: "Used Car Loan",
+  href: "/services/used-car-loan",
+  color: "bg-emerald-500",
+  highlight: true
+}, {
+  icon: TrendingUp,
+  text: "Check Credit Score FREE",
+  href: "/contact",
+  color: "bg-orange-500"
+}, {
+  icon: Wallet,
+  text: "Personal Loan",
+  href: "/services/personal-loan",
+  color: "bg-purple-500"
+}, {
+  icon: CreditCard,
+  text: "Best Credit Cards",
+  href: "/services/credit-cards",
+  color: "bg-pink-500"
+}, {
+  icon: Building,
+  text: "Business Loan",
+  href: "/services/business-loan",
+  color: "bg-cyan-500"
+}];
 const QuickLinksBanner = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
-  const [links, setLinks] = useState<NavLinkItem[]>([]);
-
-  useEffect(() => {
-    const loadLinks = async () => {
-      try {
-        const res = await publicCMSAPI.listNavItems('footer');
-        if (res.status === 'ok' && res.data) {
-          setLinks(res.data || []);
-        }
-      } catch (error) {
-        console.error('Failed to load quick links:', error);
-        setLinks([]);
-      }
-    };
-    loadLinks();
-  }, []);
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
@@ -120,33 +112,21 @@ const QuickLinksBanner = () => {
             className="flex items-center gap-3 overflow-x-auto px-10 py-2 scrollbar-thin scroll-smooth"
             style={{ scrollbarWidth: 'thin' }}
           >
-            {links.map((link, index) => {
-              const key = link.href.toLowerCase();
-              const Icon = Object.entries(iconMap).find(([k]) => key.includes(k))?.[1] || ChevronRight;
-              const isExternal = link.href.startsWith('http');
-              const item = (
-                <div
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105 whitespace-nowrap flex-shrink-0 ${
-                    link.highlight 
-                      ? 'bg-accent text-accent-foreground shadow-md' 
-                      : 'bg-card text-foreground border border-border hover:border-primary/50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{link.label}</span>
-                  <ChevronRight className="w-3 h-3 opacity-50" />
-                </div>
-              );
-              return isExternal ? (
-                <a key={link._id || index} href={link.href} target={link.target || '_blank'} rel="noopener noreferrer">
-                  {item}
-                </a>
-              ) : (
-                <Link key={link._id || index} to={link.href}>
-                  {item}
-                </Link>
-              );
-            })}
+            {quickLinks.map((link, index) => (
+              <Link
+                key={index}
+                to={link.href}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105 whitespace-nowrap flex-shrink-0 ${
+                  link.highlight 
+                    ? 'bg-accent text-accent-foreground shadow-md' 
+                    : 'bg-card text-foreground border border-border hover:border-primary/50'
+                }`}
+              >
+                <link.icon className="w-4 h-4" />
+                <span>{link.text}</span>
+                <ChevronRight className="w-3 h-3 opacity-50" />
+              </Link>
+            ))}
           </div>
         </div>
       </div>

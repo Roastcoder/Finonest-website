@@ -1,95 +1,87 @@
-import { useState, useEffect } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { HelpCircle, FileQuestion, Percent, Clock, FileText, Shield, Loader2 } from "lucide-react";
-import { publicCMSAPI } from "@/lib/api";
+import { HelpCircle, FileQuestion, Percent, Clock, FileText, Shield } from "lucide-react";
 
-interface FAQItem {
-  _id: string;
-  question: string;
-  answer: string;
-  category?: string;
-  order?: number;
-}
-
-interface FAQCategory {
-  title: string;
-  icon: any;
-  faqs: FAQItem[];
-}
-
-// Icon mapping for categories
-const categoryIcons: Record<string, any> = {
-  'eligibility': FileQuestion,
-  'documents': FileText,
-  'interest-rates': Percent,
-  'process': Clock,
-  'process-timeline': Clock,
-  'timeline': Clock,
-};
+const faqCategories = [
+  {
+    icon: FileQuestion,
+    title: "Eligibility",
+    faqs: [
+      {
+        question: "What are the basic eligibility criteria for a loan?",
+        answer: "The basic eligibility criteria include: Age between 21-65 years, Indian citizenship or resident, stable income source (salaried or self-employed), minimum monthly income of ₹15,000, and a good credit score (650+). Specific requirements may vary based on the loan type."
+      },
+      {
+        question: "Can I apply for a loan if I have a low credit score?",
+        answer: "Yes, we work with multiple lending partners including NBFCs that offer loans to individuals with lower credit scores. While interest rates may be slightly higher, we help you find the best possible option. We also provide credit improvement guidance."
+      },
+      {
+        question: "Is there an age limit for applying for a home loan?",
+        answer: "For home loans, the minimum age is 21 years and the loan tenure should end before you turn 70 years. Some banks may extend this to 75 years for certain profiles. Self-employed professionals may have different age criteria."
+      },
+    ]
+  },
+  {
+    icon: FileText,
+    title: "Documents",
+    faqs: [
+      {
+        question: "What documents are required for a personal loan?",
+        answer: "For salaried individuals: PAN card, Aadhaar card, last 3 months salary slips, 6 months bank statements, and address proof. For self-employed: Additionally ITR for last 2 years, business registration documents, and business bank statements."
+      },
+      {
+        question: "Do I need to visit your office to submit documents?",
+        answer: "No! We offer 100% digital document submission. You can upload documents through our secure portal. Alternatively, we provide free doorstep document collection service in all major cities across India."
+      },
+      {
+        question: "What if I don't have all the required documents?",
+        answer: "Our loan experts will review your profile and suggest alternative documents that may be acceptable. We work closely with you to find solutions and ensure a smooth application process."
+      },
+    ]
+  },
+  {
+    icon: Percent,
+    title: "Interest Rates",
+    faqs: [
+      {
+        question: "What are the current interest rates for different loans?",
+        answer: "Our current rates: Home Loan starting 8.5% p.a., Car Loan from 9.0% p.a., Personal Loan from 10.5% p.a., Business Loan from 11% p.a., and Loan Against Property from 9.5% p.a. Rates vary based on your profile and credit score."
+      },
+      {
+        question: "Is the interest rate fixed or floating?",
+        answer: "We offer both fixed and floating rate options. Fixed rates remain constant throughout the tenure, while floating rates change with market conditions. Our advisors help you choose the best option based on your financial goals."
+      },
+      {
+        question: "Are there any hidden charges or processing fees?",
+        answer: "We believe in 100% transparency. Processing fees typically range from 0.5% to 2% of the loan amount. All charges including documentation fees, prepayment charges, and late payment fees are disclosed upfront before you sign."
+      },
+    ]
+  },
+  {
+    icon: Clock,
+    title: "Process & Timeline",
+    faqs: [
+      {
+        question: "How long does the loan approval process take?",
+        answer: "Personal and car loans are typically approved within 24-48 hours. Home loans may take 5-7 working days due to property verification. Business loans usually take 3-5 working days. Express processing is available for urgent requirements."
+      },
+      {
+        question: "Can I prepay my loan without any penalty?",
+        answer: "Most of our partner banks offer zero prepayment charges on floating rate loans. For fixed rate loans, prepayment charges may apply (usually 2-4% of outstanding amount). We recommend floating rate loans for flexibility."
+      },
+      {
+        question: "How do I track my loan application status?",
+        answer: "Once you apply, you receive a unique application ID. You can track your status through our website, mobile app, or by contacting your dedicated relationship manager. We also send SMS and email updates at every stage."
+      },
+    ]
+  },
+];
 
 const FAQ = () => {
-  const [faqCategories, setFaqCategories] = useState<FAQCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadFAQs = async () => {
-      try {
-        setLoading(true);
-        const res = await publicCMSAPI.listFAQs();
-        if (res.status === 'ok' && res.data) {
-          // Group FAQs by category
-          const grouped: Record<string, FAQItem[]> = {};
-          (res.data as FAQItem[]).forEach(faq => {
-            const category = faq.category || 'general';
-            if (!grouped[category]) {
-              grouped[category] = [];
-            }
-            grouped[category].push(faq);
-          });
-
-          // Convert to category array with icons
-          const categories: FAQCategory[] = Object.entries(grouped).map(([category, faqs]) => {
-            // Sort by order if available
-            faqs.sort((a, b) => (a.order || 0) - (b.order || 0));
-            
-            // Format category title (capitalize, replace hyphens)
-            const title = category
-              .split('-')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
-
-            return {
-              title,
-              icon: categoryIcons[category.toLowerCase()] || HelpCircle,
-              faqs,
-            };
-          });
-
-          // Sort categories by first FAQ order or alphabetically
-          categories.sort((a, b) => {
-            const aOrder = a.faqs[0]?.order || 999;
-            const bOrder = b.faqs[0]?.order || 999;
-            return aOrder - bOrder;
-          });
-
-          setFaqCategories(categories);
-        }
-      } catch (error) {
-        console.error('Failed to load FAQs:', error);
-        // On error, show empty state or fallback message
-        setFaqCategories([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadFAQs();
-  }, []);
   return (
     <section id="faq" className="py-10 md:py-24 relative overflow-hidden bg-gradient-section-alt">
       {/* Background */}
@@ -114,17 +106,8 @@ const FAQ = () => {
         </div>
 
         {/* FAQ Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : faqCategories.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No FAQs available at the moment.</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4 md:gap-8 max-w-6xl mx-auto">
-            {faqCategories.map((category, categoryIndex) => (
+        <div className="grid md:grid-cols-2 gap-4 md:gap-8 max-w-6xl mx-auto">
+          {faqCategories.map((category, categoryIndex) => (
             <div key={category.title} className="glass rounded-xl md:rounded-3xl p-4 md:p-8">
               {/* Category Header */}
               <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-6">
@@ -154,9 +137,8 @@ const FAQ = () => {
                 ))}
               </Accordion>
             </div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
 
         {/* Still have questions CTA */}
         <div className="text-center mt-6 md:mt-16 hidden md:block">

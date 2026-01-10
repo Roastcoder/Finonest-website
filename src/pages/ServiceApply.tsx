@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { applicationsAPI, profileAPI } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -29,6 +28,7 @@ import {
   ChevronUp,
   AlertCircle
 } from "lucide-react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 const serviceDetails: Record<string, { title: string; icon: React.ElementType; description: string; loanType: string }> = {
   "home-loan": {
@@ -85,7 +85,7 @@ const ServiceApply = () => {
   const { service } = useParams<{ service: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoggedIn } = useAuth();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [_submitted, _setSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -140,27 +140,45 @@ const ServiceApply = () => {
   const isLearningOrCard = serviceInfo?.loanType === "Finobizz Learning" || serviceInfo?.loanType === "Credit Card";
 
   useEffect(() => {
-    if (isLoggedIn && user) {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        setFormData((prev) => ({
+          ...prev,
+          email: session.user.email || "",
+        }));
+        fetchProfile(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        setFormData((prev) => ({
+          ...prev,
+          email: session.user.email || "",
+        }));
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("user_id", userId)
+      .single();
+
+    if (data) {
       setFormData((prev) => ({
         ...prev,
-        email: user.email || "",
-        fullName: user.fullName || "",
+        fullName: data.full_name || "",
+        phone: data.phone || "",
       }));
-      
-      // Fetch profile data
-      profileAPI.get().then(({ data }) => {
-        if (data) {
-          setFormData((prev) => ({
-            ...prev,
-            fullName: data.full_name || prev.fullName,
-            phone: data.phone || "",
-          }));
-        }
-      }).catch(() => {
-        // Profile fetch failed, continue with user data
-      });
     }
-  }, [isLoggedIn, user]);
+  };
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -245,16 +263,21 @@ const ServiceApply = () => {
         `Additional Notes: ${formData.notes || 'None'}`,
       ].join(' | ');
 
-      await applicationsAPI.submit({
-        loanType: serviceInfo?.loanType || "General Inquiry",
-        amount: formData.amount ? parseFloat(formData.amount) : 0,
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        employmentType: formData.employmentType || undefined,
-        monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : undefined,
-        notes: notesData,
-      });
+      if (user) {
+        const { error } = await supabase.from("loan_applications").insert({
+          user_id: user.id,
+          loan_type: serviceInfo?.loanType || "General Inquiry",
+          amount: formData.amount ? parseFloat(formData.amount) : 0,
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          employment_type: formData.employmentType || null,
+          monthly_income: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : null,
+          notes: notesData,
+        });
+
+        if (error) throw error;
+      }
 
       // Redirect to success page with service info
       const successUrl = `/form-success?service=${encodeURIComponent(serviceInfo?.loanType || "Loan Application")}&name=${encodeURIComponent(formData.fullName)}`;
@@ -264,11 +287,11 @@ const ServiceApply = () => {
         title: "Application Submitted!",
         description: "Our team will contact you within 24 hours.",
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to submit. Please try again or call us directly.",
+        description: "Failed to submit. Please try again or call us directly.",
       });
     } finally {
       setLoading(false);
@@ -476,15 +499,15 @@ const ServiceApply = () => {
                         <FileText className="w-5 h-5 text-primary" />
                         KYC Documents (Optional)
                       </span>
-                      {showKYCSection ? (
-                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                      )}
+                      {showKYCSection ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </button>
                     
                     {showKYCSection && (
-                      <div className="p-4 space-y-4 border-t border-border">
+                      <div className="p-4 space-y-4 animate-fade-in">
+                        <p className="text-sm text-muted-foreground flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                          KYC details help us process your application faster. You can also provide these later.
+                        </p>
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-foreground mb-2">
@@ -504,7 +527,7 @@ const ServiceApply = () => {
                             </label>
                             <Input
                               type="text"
-                              placeholder="1234 5678 9012"
+                              placeholder="XXXX XXXX XXXX"
                               value={formData.aadhaarNumber}
                               onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '') })}
                               maxLength={12}
@@ -515,7 +538,7 @@ const ServiceApply = () => {
                     )}
                   </div>
 
-                  {/* Address Section */}
+                  {/* Address */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
                       <MapPin className="w-5 h-5 text-primary" />
@@ -533,19 +556,19 @@ const ServiceApply = () => {
                         onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Address Line 2
                       </label>
                       <Input
                         type="text"
-                        placeholder="Street, Area, Landmark"
+                        placeholder="Street, Locality"
                         value={formData.addressLine2}
                         onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
                       />
                     </div>
-                    
+
                     <div className="grid sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
@@ -575,11 +598,46 @@ const ServiceApply = () => {
                         </label>
                         <Input
                           type="text"
-                          placeholder="Pincode"
+                          placeholder="302001"
                           value={formData.pincode}
                           onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
                           maxLength={6}
                         />
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Residence Type
+                        </label>
+                        <select
+                          value={formData.residenceType}
+                          onChange={(e) => setFormData({ ...formData, residenceType: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                        >
+                          <option value="">Select Type</option>
+                          <option value="owned">Owned</option>
+                          <option value="rented">Rented</option>
+                          <option value="parental">Parental</option>
+                          <option value="company">Company Provided</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Years at Current Address
+                        </label>
+                        <select
+                          value={formData.yearsAtAddress}
+                          onChange={(e) => setFormData({ ...formData, yearsAtAddress: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                        >
+                          <option value="">Select</option>
+                          <option value="less-1">Less than 1 year</option>
+                          <option value="1-3">1-3 years</option>
+                          <option value="3-5">3-5 years</option>
+                          <option value="5+">5+ years</option>
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -594,28 +652,29 @@ const ServiceApply = () => {
                     Employment Details
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Employment Type <span className="text-destructive">*</span>
-                    </label>
-                    <select
-                      value={formData.employmentType}
-                      onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-                      required
-                    >
-                      <option value="">Select Employment Type</option>
-                      <option value="salaried">Salaried</option>
-                      <option value="self-employed">Self-Employed</option>
-                      <option value="business">Business Owner</option>
-                      <option value="professional">Professional (Doctor, CA, etc.)</option>
-                    </select>
-                  </div>
-
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Company Name
+                        Employment Type <span className="text-destructive">*</span>
+                      </label>
+                      <select
+                        value={formData.employmentType}
+                        onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                        required
+                        aria-label="Select employment type"
+                      >
+                        <option value="">Select Type</option>
+                        <option value="salaried">Salaried</option>
+                        <option value="self-employed">Self-Employed</option>
+                        <option value="business">Business Owner</option>
+                        <option value="professional">Professional (Doctor, CA, etc.)</option>
+                        <option value="retired">Retired</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Company/Business Name
                       </label>
                       <Input
                         type="text"
@@ -624,62 +683,91 @@ const ServiceApply = () => {
                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                       />
                     </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Designation
                       </label>
                       <Input
                         type="text"
-                        placeholder="Your designation"
+                        placeholder="Your job title"
                         value={formData.designation}
                         onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Total Work Experience
+                      </label>
+                      <select
+                        value={formData.workExperience}
+                        onChange={(e) => setFormData({ ...formData, workExperience: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                      >
+                        <option value="">Select Experience</option>
+                        <option value="0-1">0-1 years</option>
+                        <option value="1-3">1-3 years</option>
+                        <option value="3-5">3-5 years</option>
+                        <option value="5-10">5-10 years</option>
+                        <option value="10+">10+ years</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-lg font-semibold text-foreground mt-6 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Office Address
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Your workplace address"
+                      value={formData.officeAddress}
+                      onChange={(e) => setFormData({ ...formData, officeAddress: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Income Details */}
+                  <div className="flex items-center gap-2 text-lg font-semibold text-foreground mt-8 mb-4">
                     <Banknote className="w-5 h-5 text-primary" />
                     Income Details
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Monthly Income (₹)
                       </label>
                       <Input
                         type="number"
-                        placeholder="Your monthly income"
+                        placeholder="50000"
                         value={formData.monthlyIncome}
                         onChange={(e) => setFormData({ ...formData, monthlyIncome: e.target.value })}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Other Income (₹)
+                        Other Income (₹/month)
                       </label>
                       <Input
                         type="number"
-                        placeholder="Rent, investments, etc."
+                        placeholder="0"
                         value={formData.otherIncome}
                         onChange={(e) => setFormData({ ...formData, otherIncome: e.target.value })}
                       />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Existing EMI (₹/month)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="Total existing EMI obligations"
-                      value={formData.existingEMI}
-                      onChange={(e) => setFormData({ ...formData, existingEMI: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Include all loan EMIs you're currently paying
-                    </p>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Existing EMI (₹/month)
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={formData.existingEMI}
+                        onChange={(e) => setFormData({ ...formData, existingEMI: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -688,14 +776,14 @@ const ServiceApply = () => {
               {currentStep === 3 && !isLearningOrCard && (
                 <div className="space-y-6 animate-fade-in">
                   <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
-                    <CreditCard className="w-5 h-5 text-primary" />
+                    <Banknote className="w-5 h-5 text-primary" />
                     Loan Requirements
                   </div>
                   
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Loan Amount Required (₹)
+                        Required Loan Amount (₹)
                       </label>
                       <Input
                         type="number"
@@ -706,7 +794,7 @@ const ServiceApply = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Preferred Tenure (Years)
+                        Preferred Tenure
                       </label>
                       <select
                         value={formData.tenure}
@@ -722,6 +810,7 @@ const ServiceApply = () => {
                         <option value="10">10 Years</option>
                         <option value="15">15 Years</option>
                         <option value="20">20 Years</option>
+                        <option value="30">30 Years</option>
                       </select>
                     </div>
                   </div>
@@ -730,13 +819,26 @@ const ServiceApply = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Purpose of Loan
                     </label>
-                    <Textarea
-                      placeholder="Briefly describe why you need this loan..."
-                      rows={3}
+                    <select
                       value={formData.purpose}
                       onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                      className="resize-none"
-                    />
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                    >
+                      <option value="">Select Purpose</option>
+                      <option value="home-purchase">Home Purchase</option>
+                      <option value="construction">Home Construction</option>
+                      <option value="renovation">Home Renovation</option>
+                      <option value="balance-transfer">Balance Transfer</option>
+                      <option value="business-expansion">Business Expansion</option>
+                      <option value="working-capital">Working Capital</option>
+                      <option value="vehicle">Vehicle Purchase</option>
+                      <option value="education">Education</option>
+                      <option value="medical">Medical Expenses</option>
+                      <option value="wedding">Wedding</option>
+                      <option value="travel">Travel</option>
+                      <option value="debt-consolidation">Debt Consolidation</option>
+                      <option value="other">Other</option>
+                    </select>
                   </div>
 
                   <div>
@@ -744,8 +846,8 @@ const ServiceApply = () => {
                       Additional Notes
                     </label>
                     <Textarea
-                      placeholder="Any other information you'd like to share..."
-                      rows={2}
+                      placeholder="Any specific requirements or questions..."
+                      rows={3}
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       className="resize-none"
@@ -760,17 +862,11 @@ const ServiceApply = () => {
                         checked={formData.consentTerms}
                         onChange={(e) => setFormData({ ...formData, consentTerms: e.target.checked })}
                         className="mt-1 w-4 h-4 rounded border-border"
-                        required
                       />
                       <span className="text-sm text-muted-foreground">
-                        <span className="text-destructive">*</span> I agree to the{" "}
-                        <Link to="/terms" className="text-primary hover:underline">Terms & Conditions</Link>
-                        {" "}and{" "}
-                        <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-                        I consent to Finonest sharing my information with partner banks and financial institutions.
+                        I agree to the <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>. I consent to Finonest processing my data for loan application purposes. <span className="text-destructive">*</span>
                       </span>
                     </label>
-                    
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -779,7 +875,7 @@ const ServiceApply = () => {
                         className="mt-1 w-4 h-4 rounded border-border"
                       />
                       <span className="text-sm text-muted-foreground">
-                        I would like to receive promotional offers and updates from Finonest via SMS, Email, and WhatsApp.
+                        I would like to receive promotional offers and updates from Finonest.
                       </span>
                     </label>
                   </div>
@@ -787,60 +883,38 @@ const ServiceApply = () => {
               )}
 
               {/* Navigation Buttons */}
-              <div className="flex gap-4 pt-4">
-                {!isLearningOrCard && currentStep > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    className="flex-1"
-                  >
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                {currentStep > 1 && !isLearningOrCard && (
+                  <Button type="button" variant="outline" onClick={prevStep} className="sm:flex-1">
                     Back
                   </Button>
                 )}
                 
-                {!isLearningOrCard && currentStep < 3 ? (
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    className="flex-1"
-                  >
+                {currentStep < 3 && !isLearningOrCard ? (
+                  <Button type="button" onClick={nextStep} className="sm:flex-1">
                     Continue
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 ) : (
-                  <Button
-                    type="submit"
-                    className="flex-1"
-                    disabled={loading}
-                  >
+                  <Button type="submit" className="sm:flex-1" size="lg" disabled={loading}>
                     {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Submitting...
-                      </>
+                      <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
                         Submit Application
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                        <ArrowRight className="w-5 h-5 ml-2" />
                       </>
                     )}
                   </Button>
                 )}
               </div>
-            </form>
-          </div>
 
-          {/* Help Section */}
-          <div className="mt-6 bg-muted/50 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Need Help?</p>
-              <p className="text-sm text-muted-foreground">
-                Call us at <a href="tel:+919876543210" className="text-primary hover:underline">+91 98765 43210</a> or{" "}
-                <a href="https://wa.me/919876543210" className="text-primary hover:underline">WhatsApp</a> us for instant assistance.
-              </p>
-            </div>
+              {!user && (
+                <p className="text-center text-muted-foreground text-sm pt-4">
+                  <Link to="/auth" className="text-primary hover:underline">Login</Link> to track your application status.
+                </p>
+              )}
+            </form>
           </div>
         </div>
       </main>

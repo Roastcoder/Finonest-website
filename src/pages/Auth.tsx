@@ -3,8 +3,6 @@ import { Helmet } from "react-helmet";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { getCurrentUser } from "@/lib/api";
 import {
   Eye,
   EyeOff,
@@ -36,7 +34,6 @@ export default function Auth() {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { refreshAuth } = useAuth();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -74,8 +71,11 @@ export default function Auth() {
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-      const payload = isLogin ? { email, password } : { email, password, fullName };
+      const endpoint = isLogin ? "/api/v1/auth/login" : "/api/v1/auth/register";
+
+      const payload = isLogin
+        ? { email, password }
+        : { email, password, fullName: fullName.trim() };
 
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
@@ -83,51 +83,27 @@ export default function Auth() {
         body: JSON.stringify(payload),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = isLogin ? "Login failed" : "Registration failed";
-        
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          errorMessage = `Server error (${res.status})`;
-        }
-        
         toast({
           variant: "destructive",
           title: "Error",
-          description: errorMessage,
+          description: data.message || "Something went wrong",
         });
         return;
       }
 
-      const data = await res.json();
-      console.log('Login response:', data); // Debug log
-      localStorage.setItem("token", data.data.accessToken);
-      
-      // Refresh auth state
-      refreshAuth();
+      localStorage.setItem("token", data.data.token);
 
       toast({
         title: isLogin ? "Welcome Back!" : "Account Created!",
-        description: isLogin ? "You have successfully logged in." : "Welcome to Finonest.",
+        description: isLogin
+          ? "You have successfully logged in."
+          : "Welcome to Finonest.",
       });
 
-      // Check if user is admin and redirect accordingly
-      console.log('User data:', data.data.user); // Debug log
-      console.log('Email:', email); // Debug log
-      
-      if (email === 'admin@finonest.com') {
-        console.log('Redirecting to admin panel'); // Debug log
-        // Use window.location with delay to ensure auth state is updated
-        setTimeout(() => {
-          window.location.href = '/admin/cms';
-        }, 500);
-      } else {
-        console.log('Redirecting to customer dashboard'); // Debug log
-        navigate("/customer/dashboard");
-      }
+      navigate("/dashboard");
     } catch (error) {
       console.error('Auth error:', error);
       toast({
@@ -283,28 +259,6 @@ export default function Auth() {
                       <p className="text-xs text-red-500 mt-1">{errors.password}</p>
                     )}
                   </div>
-
-                  {isLogin && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full mb-4"
-                      onClick={() => {
-                        setEmail('admin@finonest.com');
-                        setPassword('Admin@123');
-                        setTimeout(() => {
-                          const form = document.querySelector('form');
-                          if (form) {
-                            const event = new Event('submit', { bubbles: true, cancelable: true });
-                            form.dispatchEvent(event);
-                          }
-                        }, 100);
-                      }}
-                    >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Admin Login
-                    </Button>
-                  )}
 
                   <Button 
                     disabled={loading} 

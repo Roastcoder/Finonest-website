@@ -859,24 +859,6 @@ const AdminDashboard = () => {
                       Refresh Data
                     </Button>
                     <Button variant="outline" size="sm" asChild>
-                      <Link to="/admin/cms/blog">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Blog
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to="/admin/cms/services">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Services
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to="/admin/cms/forms">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Forms
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
                       <Link to="/">
                         <Globe className="w-4 h-4 mr-2" />
                         View Website
