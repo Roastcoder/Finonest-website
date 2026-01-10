@@ -1,46 +1,40 @@
-import { CheckCircle2, Users, Award, Headphones, FileCheck, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle2, Users, Award, Headphones, FileCheck, Zap, Loader2 } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { publicCMSAPI } from "@/lib/api";
 
-import whyQuickApproval from "@/assets/why-quick-approval.jpg";
-import whySimpleProcess from "@/assets/why-simple-process.jpg";
-import whyBestRates from "@/assets/why-best-rates.jpg";
-import whySupport from "@/assets/why-support.jpg";
-import whyPartners from "@/assets/why-partners.jpg";
-import whyTransparent from "@/assets/why-transparent.jpg";
+interface WhyUsFeature {
+  _id: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  image?: {
+    url?: string;
+    altText?: string;
+  };
+  order?: number;
+}
 
-const features = [{
-  icon: Zap,
-  title: "Quick Approval",
-  description: "Get your loan approved within 24 hours with minimal documentation",
-  image: whyQuickApproval
-}, {
-  icon: FileCheck,
-  title: "Simple Process",
-  description: "Easy online application with doorstep document collection",
-  image: whySimpleProcess
-}, {
-  icon: Award,
-  title: "Best Rates",
-  description: "Competitive interest rates with flexible repayment options",
-  image: whyBestRates
-}, {
-  icon: Headphones,
-  title: "24/7 Support",
-  description: "Dedicated relationship managers for personalized assistance",
-  image: whySupport
-}, {
-  icon: Users,
-  title: "50+ Bank Partners",
-  description: "Wide network of banking partners for best loan offers",
-  image: whyPartners
-}, {
-  icon: CheckCircle2,
-  title: "100% Transparent",
-  description: "No hidden charges or processing fees surprises",
-  image: whyTransparent
-}];
+// Icon mapping
+const iconMap: Record<string, any> = {
+  zap: Zap,
+  quick: Zap,
+  filecheck: FileCheck,
+  file: FileCheck,
+  award: Award,
+  rates: Award,
+  headphones: Headphones,
+  support: Headphones,
+  users: Users,
+  partners: Users,
+  checkcircle: CheckCircle2,
+  check: CheckCircle2,
+  transparent: CheckCircle2,
+};
 
 const WhyUs = () => {
+  const [features, setFeatures] = useState<WhyUsFeature[]>([]);
+  const [loading, setLoading] = useState(true);
   const {
     ref: headerRef,
     isRevealed: headerRevealed
@@ -51,6 +45,35 @@ const WhyUs = () => {
   } = useScrollReveal({
     threshold: 0.05
   });
+
+  useEffect(() => {
+    const loadFeatures = async () => {
+      try {
+        setLoading(true);
+        const res = await publicCMSAPI.listWhyUsFeatures();
+        if (res.status === 'ok' && res.data) {
+          setFeatures(res.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load WhyUs features:', error);
+        setFeatures([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadFeatures();
+  }, []);
+
+  const getIcon = (iconName?: string) => {
+    if (!iconName) return Zap;
+    const key = iconName.toLowerCase().replace(/\s+/g, '');
+    for (const [mapKey, Icon] of Object.entries(iconMap)) {
+      if (key.includes(mapKey)) {
+        return Icon;
+      }
+    }
+    return Zap;
+  };
 
   return (
     <section id="why-us" className="py-10 md:py-24 relative overflow-hidden bg-gradient-section-alt">
@@ -86,33 +109,52 @@ const WhyUs = () => {
 
           {/* Right Grid - 2x2 on mobile */}
           <div ref={gridRef} className="grid grid-cols-2 gap-3 md:gap-4">
-            {features.map((feature, index) => (
-              <div 
-                key={feature.title} 
-                className={`bg-card rounded-xl md:rounded-2xl overflow-hidden shadow-lg card-hover group card-scroll-reveal ${gridRevealed ? 'revealed' : ''}`} 
-                style={{ transitionDelay: `${index * 0.1}s` }}
-              >
-                {/* Image */}
-                <div className="relative h-20 md:h-32 overflow-hidden">
-                  <img 
-                    src={feature.image} 
-                    alt={feature.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/40 to-transparent" />
-                  <div className="absolute bottom-2 left-2 md:bottom-3 md:left-3 w-8 h-8 md:w-10 md:h-10 rounded-lg bg-background/90 flex items-center justify-center shadow-lg">
-                    <feature.icon className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                  </div>
-                </div>
-                
-                {/* Content */}
-                <div className="p-3 md:p-4">
-                  <h3 className="font-display text-xs md:text-base font-semibold mb-1">{feature.title}</h3>
-                  <p className="text-[10px] md:text-sm text-muted-foreground leading-relaxed hidden md:block">{feature.description}</p>
-                </div>
+            {loading ? (
+              <div className="col-span-2 flex justify-center py-10">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
-            ))}
+            ) : features.length === 0 ? (
+              <div className="col-span-2 text-center py-10 text-muted-foreground">
+                Features will appear here once published.
+              </div>
+            ) : (
+              features.map((feature, index) => {
+                const Icon = getIcon(feature.icon);
+                return (
+                  <div 
+                    key={feature._id} 
+                    className={`bg-card rounded-xl md:rounded-2xl overflow-hidden shadow-lg card-hover group card-scroll-reveal ${gridRevealed ? 'revealed' : ''}`} 
+                    style={{ transitionDelay: `${index * 0.1}s` }}
+                  >
+                    {/* Image */}
+                    <div className="relative h-20 md:h-32 overflow-hidden">
+                      {feature.image?.url ? (
+                        <img 
+                          src={feature.image.url} 
+                          alt={feature.image.altText || feature.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20" />
+                      )}
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/40 to-transparent" />
+                      <div className="absolute bottom-2 left-2 md:bottom-3 md:left-3 w-8 h-8 md:w-10 md:h-10 rounded-lg bg-background/90 flex items-center justify-center shadow-lg">
+                        <Icon className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-3 md:p-4">
+                      <h3 className="font-display text-xs md:text-base font-semibold mb-1">{feature.title}</h3>
+                      {feature.description && (
+                        <p className="text-[10px] md:text-sm text-muted-foreground leading-relaxed hidden md:block">{feature.description}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

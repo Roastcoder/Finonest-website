@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { supabase } from '../integrations/supabase/client';
+import api, { authAPI, isAuthenticated } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -19,71 +19,44 @@ const AdminLogin = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    checkExistingAuth();
-  }, []);
-
-  const checkExistingAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Check if user is admin
-        const { data } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        if (data) {
-          navigate('/admin/cms');
+    (async () => {
+      try {
+        if (!isAuthenticated()) {
+          setCheckingAuth(false);
           return;
         }
+
+        const isAdmin = await api.admin.checkRole();
+        if (isAdmin) navigate('/admin/cms');
+      } catch (error: unknown) {
+        console.error('Auth check error:', (error as Error).message || error);
+      } finally {
+        setCheckingAuth(false);
       }
-    } catch (error) {
-      console.error('Auth check error:', error);
-    } finally {
-      setCheckingAuth(false);
-    }
-  };
+    })();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const res = await authAPI.login(email, password);
+      if (!res.success) throw new Error(res.message || 'Login failed');
 
-      if (error) throw error;
-
-      if (data.user) {
-        // Check admin role
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .eq('role', 'admin')
-          .single();
-
-        if (roleError || !roleData) {
-          await supabase.auth.signOut();
-          throw new Error('Access denied. Admin privileges required.');
-        }
-
-        toast({
-          title: 'Login Successful',
-          description: 'Welcome to the admin panel!',
-        });
-
-        navigate('/admin/cms');
+      const isAdmin = await api.admin.checkRole();
+      if (!isAdmin) {
+        await authAPI.logout();
+        throw new Error('Access denied. Admin privileges required.');
       }
-    } catch (error: any) {
+
+      toast({ title: 'Login Successful', description: 'Welcome to the admin panel!' });
+      navigate('/admin/cms');
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'Invalid credentials',
+        description: (error as Error).message || 'Invalid credentials',
       });
     } finally {
       setLoading(false);
@@ -102,35 +75,24 @@ const AdminLogin = () => {
 
     setLoading(true);
     try {
-      // Create user account
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await fetch(`${API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, fullName: 'Admin' }),
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        // Add admin role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: data.user.id,
-            role: 'admin'
-          });
-
-        if (roleError) throw roleError;
-
-        toast({
-          title: 'Admin Account Created',
-          description: 'Please check your email to verify your account.',
-        });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Registration failed');
       }
-    } catch (error: any) {
+
+      toast({ title: 'Account Created', description: 'Admin account created successfully!' });
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message,
+        description: (error as Error).message,
       });
     } finally {
       setLoading(false);

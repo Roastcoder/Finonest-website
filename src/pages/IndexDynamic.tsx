@@ -1,80 +1,96 @@
 import { useState, useEffect } from 'react';
 import Navbar from "@/components/Navbar";
-import HeroSection from "@/components/HeroSection";
-import PartnerBanks from "@/components/PartnerBanks";
-import Services from "@/components/Services";
-import ProcessSteps from "@/components/ProcessSteps";
-import WhyUs from "@/components/WhyUs";
-import Testimonials from "@/components/Testimonials";
-import FAQ from "@/components/FAQ";
-import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import BottomNavigation from "@/components/BottomNavigation";
-import CreditScoreBanner from "@/components/CreditScoreBanner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
-import { AnimateOnScroll } from "@/hooks/useScrollAnimation";
+import DynamicPageRenderer from "@/components/DynamicPageRenderer";
+import { publicCMSAPI } from "@/lib/api";
 
 const Index = () => {
-  const [isReady, setIsReady] = useState(false);
+  const [pageData, setPageData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsReady(true);
+    const fetchHomePage = async () => {
+      try {
+        setLoading(true);
+        // Fetch homepage by slug "/" - use direct fetch to pages list and find home page
+        const response = await fetch('http://localhost:4000/api/pages');
+        const data = await response.json();
+        
+        if (data.status === 'ok' && data.data && data.data.items) {
+          const homePage = data.data.items.find((page: any) => page.slug === '/');
+          if (homePage) {
+            console.log('Home page data loaded:', homePage);
+            setPageData(homePage);
+          } else {
+            console.log('Home page not found in pages list');
+            // Fallback: use hardcoded structure if CMS page not found
+            setPageData({
+              slug: '/',
+              template: 'home',
+              blocks: [
+                { type: 'hero', props: {} },
+                { type: 'creditScoreBanner', props: {} },
+                { type: 'services', props: {} },
+                { type: 'processSteps', props: {} },
+                { type: 'whyUs', props: {} },
+                { type: 'testimonials', props: {} },
+                { type: 'faq', props: {} },
+                { type: 'contact', props: {} },
+                { type: 'partnerBanks', props: {} },
+              ]
+            });
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch homepage:', err);
+        setError(err.message);
+        // Fallback structure on error
+        setPageData({
+          slug: '/',
+          template: 'home',
+          blocks: [
+            { type: 'hero', props: {} },
+            { type: 'creditScoreBanner', props: {} },
+            { type: 'services', props: {} },
+            { type: 'processSteps', props: {} },
+            { type: 'whyUs', props: {} },
+            { type: 'testimonials', props: {} },
+            { type: 'faq', props: {} },
+            { type: 'contact', props: {} },
+            { type: 'partnerBanks', props: {} },
+          ]
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHomePage();
   }, []);
 
-  if (!isReady) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-16 lg:pb-0">
       <Navbar />
-      
-      <HeroSection />
-      
-      {/* Credit Score Banner */}
-      <div className="-mt-7">
-        <CreditScoreBanner />
-      </div>
-      
-      {/* Hide detailed services on mobile, show on desktop */}
-      <div className="hidden lg:block -mt-2">
-        <AnimateOnScroll animation="fade-up" delay={0}>
-          <Services />
-        </AnimateOnScroll>
-      </div>
-      
-      <div className="-mt-30">
-        <AnimateOnScroll animation="fade-up">
-          <ProcessSteps />
-        </AnimateOnScroll>
-      </div>
-      <div className="-mt-30">
-        <AnimateOnScroll animation="fade-up">
-          <WhyUs />
-        </AnimateOnScroll>
-      </div>
-      <div className="-mt-30">
-        <AnimateOnScroll animation="fade-up">
-          <Testimonials />
-        </AnimateOnScroll>
-      </div>
-      <div className="-mt-30">
-        <AnimateOnScroll animation="fade-up">
-          <FAQ />
-        </AnimateOnScroll>
-      </div>
-      <div className="-mt-30">
-        <AnimateOnScroll animation="fade-up">
-          <Contact />
-        </AnimateOnScroll>
-      </div>
-      
-      {/* Banking Partners */}
-      <div className="-mt-24">
-        <AnimateOnScroll animation="fade-up">
-          <PartnerBanks />
-        </AnimateOnScroll>
-      </div>
-      
+      {pageData ? (
+        <DynamicPageRenderer pageData={pageData} />
+      ) : (
+        <div className="container mx-auto px-4 py-16">
+          <h1 className="text-2xl font-bold mb-2">Welcome to Finonest</h1>
+          <p className="text-muted-foreground">{error || 'Loading content...'}</p>
+        </div>
+      )}
       <Footer />
       <WhatsAppButton />
       <BottomNavigation />

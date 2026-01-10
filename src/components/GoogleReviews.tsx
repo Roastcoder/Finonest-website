@@ -1,35 +1,56 @@
-import { Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, Loader2 } from "lucide-react";
+import { publicCMSAPI } from "@/lib/api";
 
-const reviews = [
-  {
-    name: "Rahul Sharma",
-    rating: 5,
-    text: "Excellent service! Got my home loan approved within a week. The team was very helpful and transparent throughout the process.",
-    time: "2 weeks ago",
-  },
-  {
-    name: "Priya Gupta",
-    rating: 5,
-    text: "Very professional and knowledgeable team. They helped me find the best interest rate for my business loan. Highly recommended!",
-    time: "1 month ago",
-  },
-  {
-    name: "Amit Patel",
-    rating: 5,
-    text: "Great experience with Finonest. They made the car loan process so simple. Quick approval and excellent customer support.",
-    time: "3 weeks ago",
-  },
-  {
-    name: "Neha Singh",
-    rating: 5,
-    text: "I was struggling to get a personal loan due to my credit score. Finonest helped me find the right lender. Thank you!",
-    time: "1 month ago",
-  },
-];
+interface Testimonial {
+  _id: string;
+  name: string;
+  role?: string;
+  content: string;
+  rating: number;
+  avatar?: { url?: string; altText?: string };
+  createdAt?: string;
+}
 
 const GoogleReviews = () => {
-  const averageRating = 4.9;
-  const totalReviews = 127;
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTestimonials = async () => {
+      try {
+        setLoading(true);
+        const res = await publicCMSAPI.listTestimonials({ limit: 4, featured: true });
+        if (res.status === 'ok' && res.data) {
+          setTestimonials(res.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load testimonials:', error);
+        setTestimonials([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTestimonials();
+  }, []);
+
+  const averageRating = testimonials.length > 0
+    ? testimonials.reduce((sum, t) => sum + (t.rating || 5), 0) / testimonials.length
+    : 4.9;
+  const totalReviews = testimonials.length || 127;
+
+  const formatTimeAgo = (dateString?: string) => {
+    if (!dateString) return 'Recently';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? 's' : ''} ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) !== 1 ? 's' : ''} ago`;
+    return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) !== 1 ? 's' : ''} ago`;
+  };
 
   return (
     <section className="py-16 bg-muted/30">
@@ -57,35 +78,56 @@ const GoogleReviews = () => {
           <p className="text-muted-foreground">Based on {totalReviews} reviews</p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {reviews.map((review, index) => (
-            <div
-              key={index}
-              className="bg-background rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                  {review.name.charAt(0)}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : testimonials.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            Reviews will appear here once published.
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {testimonials.map((testimonial) => (
+              <div
+                key={testimonial._id}
+                className="bg-background rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  {testimonial.avatar?.url ? (
+                    <img 
+                      src={testimonial.avatar.url} 
+                      alt={testimonial.avatar.altText || testimonial.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                      {testimonial.name.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-medium text-foreground">{testimonial.name}</h4>
+                    {testimonial.role && (
+                      <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">{formatTimeAgo(testimonial.createdAt)}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-medium text-foreground">{review.name}</h4>
-                  <p className="text-xs text-muted-foreground">{review.time}</p>
+                <div className="flex mb-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-4 h-4 ${star <= (testimonial.rating || 5) ? "fill-yellow-400 text-yellow-400" : "text-muted"}`}
+                    />
+                  ))}
                 </div>
+                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+                  {testimonial.content}
+                </p>
               </div>
-              <div className="flex mb-3">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={`w-4 h-4 ${star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted"}`}
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
-                {review.text}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="text-center">
           <a

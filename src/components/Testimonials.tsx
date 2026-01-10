@@ -1,6 +1,28 @@
+import { useEffect, useState } from "react";
 import { Quote } from "lucide-react";
+import { publicCMSAPI } from "@/lib/api";
 
-const testimonials = [
+interface TestimonialData {
+  name: string;
+  role?: string;
+  content: string;
+  rating?: number;
+  avatar?: {
+    url?: string;
+    altText?: string;
+  };
+}
+
+interface TestimonialsProps {
+  testimonials?: TestimonialData[];
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  limit?: number;
+  featured?: boolean;
+}
+
+const defaultTestimonials: TestimonialData[] = [
   {
     name: "Rajesh Kumar",
     role: "Business Owner, Jaipur",
@@ -21,22 +43,74 @@ const testimonials = [
   },
 ];
 
-const Testimonials = () => {
+const Testimonials: React.FC<TestimonialsProps> = ({ 
+  testimonials: propsTestimonials, 
+  title,
+  subtitle,
+  description,
+  limit,
+  featured 
+}) => {
+  const [testimonials, setTestimonials] = useState<TestimonialData[]>(propsTestimonials || defaultTestimonials);
+  const [loading, setLoading] = useState(!propsTestimonials);
+
+  useEffect(() => {
+    // If props are provided, use them
+    if (propsTestimonials) {
+      setTestimonials(propsTestimonials);
+      setLoading(false);
+      return;
+    }
+
+    // Otherwise, fetch from CMS
+    const fetchTestimonials = async () => {
+      try {
+        setLoading(true);
+        const response = await publicCMSAPI.listTestimonials({ limit, featured });
+        if (response.status === 'ok' && response.data && Array.isArray(response.data)) {
+          setTestimonials(response.data.map((t: any) => ({
+            name: t.name,
+            role: t.role,
+            content: t.content,
+            rating: t.rating || 5,
+            avatar: t.avatar
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to fetch testimonials:', err);
+        // Keep default testimonials on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, [propsTestimonials, limit, featured]);
+
+  if (loading) {
+    return null; // Or a loading skeleton
+  }
   return (
     <section className="py-10 md:py-24 relative overflow-hidden bg-gradient-section">
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-6 md:mb-16">
           <span className="inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-primary/10 text-primary text-xs md:text-sm font-medium mb-2 md:mb-4">
-            Testimonials
+            {subtitle || "Testimonials"}
           </span>
           <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-6">
-            What Our{" "}
-            <span className="text-gradient-primary">Customers Say</span>
+            {title || (
+              <>
+                What Our{" "}
+                <span className="text-gradient-primary">Customers Say</span>
+              </>
+            )}
           </h2>
-          <p className="text-muted-foreground text-sm md:text-lg hidden md:block">
-            Join thousands of satisfied customers who achieved their financial goals with us
-          </p>
+          {description && (
+            <p className="text-muted-foreground text-sm md:text-lg hidden md:block">
+              {description}
+            </p>
+          )}
         </div>
 
         {/* Testimonials Grid */}
@@ -60,14 +134,24 @@ const Testimonials = () => {
               </p>
 
               <div className="flex items-center gap-2 md:gap-4">
-                <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-gradient-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-display font-bold text-sm md:text-lg">
-                    {testimonial.name.charAt(0)}
-                  </span>
-                </div>
+                {testimonial.avatar?.url ? (
+                  <img 
+                    src={testimonial.avatar.url} 
+                    alt={testimonial.avatar.altText || testimonial.name}
+                    className="w-8 h-8 md:w-12 md:h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-gradient-primary flex items-center justify-center">
+                    <span className="text-primary-foreground font-display font-bold text-sm md:text-lg">
+                      {testimonial.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
                 <div>
                   <h4 className="font-semibold text-foreground text-xs md:text-base">{testimonial.name}</h4>
-                  <p className="text-[10px] md:text-sm text-muted-foreground">{testimonial.role}</p>
+                  {testimonial.role && (
+                    <p className="text-[10px] md:text-sm text-muted-foreground">{testimonial.role}</p>
+                  )}
                 </div>
               </div>
             </div>

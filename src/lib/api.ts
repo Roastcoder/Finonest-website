@@ -1,4 +1,5 @@
 // API Service for connecting to external Node.js backend
+// Check environment file
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // Auth types
@@ -6,6 +7,7 @@ export interface User {
   id: string;
   email: string;
   fullName?: string;
+  role?: string;
 }
 
 export interface AuthResponse {
@@ -63,6 +65,7 @@ export const getCurrentUser = (): User | null => {
       id: payload.userId || payload.id,
       email: payload.email,
       fullName: payload.fullName,
+      role: payload.role, // Include role from JWT
     };
   } catch {
     removeToken();
@@ -88,42 +91,121 @@ async function apiRequest<T>(
     headers,
   });
 
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    const text = await response.text();
+    throw new Error(`Expected JSON but received: ${text.substring(0, 100)}...`);
+  }
+
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Something went wrong");
+    throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
   }
 
   return data;
 }
 
-// Auth API
+// Admin Auth API (email/password)
 export const authAPI = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    const response = await apiRequest<AuthResponse>("/api/v1/auth/login", {
+    const response = await apiRequest<{ status: string; data: { accessToken: string; user: any } }>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    if (response.data?.token) {
-      setToken(response.data.token);
+    
+    if (response.status === 'ok' && response.data?.accessToken) {
+      setToken(response.data.accessToken);
+      return {
+        success: true,
+        data: {
+          token: response.data.accessToken,
+          user: response.data.user
+        }
+      };
     }
-    return response;
+    
+    return {
+      success: false,
+      message: 'Login failed'
+    };
   },
 
-  register: async (email: string, password: string, fullName: string): Promise<AuthResponse> => {
-    const response = await apiRequest<AuthResponse>("/api/v1/auth/register", {
-      method: "POST",
-      body: JSON.stringify({ email, password, fullName }),
-    });
-    if (response.data?.token) {
-      setToken(response.data.token);
+  logout: async (): Promise<void> => {
+    try {
+      await apiRequest('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      // ignore server errors, proceed to clear local token
     }
-    return response;
-  },
-
-  logout: (): void => {
     removeToken();
   },
+
+  refresh: async (): Promise<{ status: string; data: { accessToken: string } }> => {
+    return apiRequest('/api/auth/refresh', { method: 'POST' });
+  },
+
+  me: async () => {
+    return apiRequest<{ status: string; data: any }>('/api/auth/me');
+  },
+};
+
+// Customer Auth API (OTP-based)
+export const customerAuthAPI = {
+  sendOTP: async (phone: string): Promise<{ status: string; message: string; expiresIn: number }> => {
+    return apiRequest('/api/customer/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  },
+
+  verifyOTP: async (phone: string, otp: string): Promise<{ status: string; data: { customer: any; accessToken: string } }> => {
+    const response = await apiRequest<{ status: string; data: { customer: any; accessToken: string } }>('/api/customer/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone, otp }),
+    });
+    if (response.data?.accessToken) {
+      setToken(response.data.accessToken);
+    }
+    return response;
+  },
+
+  refresh: async (): Promise<{ status: string; data: { accessToken: string } }> => {
+    return apiRequest('/api/customer/auth/refresh', { method: 'POST' });
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      await apiRequest('/api/customer/auth/logout', { method: 'POST' });
+    } catch (e) {
+      // ignore server errors
+    }
+    removeToken();
+  },
+
+  me: async () => {
+    return apiRequest<{ status: string; data: any }>('/api/customer/auth/me');
+  },
+};
+
+// Customer API (protected)
+export const customerAPI = {
+  // Profile
+  getProfile: async () => apiRequest<{ status: string; data: any }>('/api/customer/profile'),
+  updateProfile: async (data: Record<string, unknown>) => apiRequest('/api/customer/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Dashboard
+  getDashboard: async () => apiRequest<{ status: string; data: any }>('/api/customer/dashboard'),
+
+  // Applications
+  getApplications: async (params?: { page?: number; limit?: number; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.status) query.append('status', params.status);
+    const queryStr = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest<{ status: string; data: any }>(`/api/customer/applications${queryStr}`);
+  },
+  getApplication: async (id: string) => apiRequest<{ status: string; data: any }>(`/api/customer/applications/${id}`),
 };
 
 // Applications API
@@ -138,8 +220,8 @@ export const applicationsAPI = {
     monthlyIncome?: number;
     notes?: string;
   }) => {
-    return apiRequest<{ success: boolean; data: { applicationId: string } }>(
-      "/api/v1/applications",
+    return apiRequest<{ status: string; data: { applicationId: string } }>(
+      "/api/customer/applications",
       {
         method: "POST",
         body: JSON.stringify(data),
@@ -197,8 +279,8 @@ export const contactAPI = {
 export const adminAPI = {
   checkRole: async (): Promise<boolean> => {
     try {
-      const response = await apiRequest<{ success: boolean; data: { isAdmin: boolean } }>(
-        "/api/v1/admin/check-role"
+      const response = await apiRequest<{ status: string; data: { isAdmin: boolean } }>(
+        "/api/admin/check-role"
       );
       return response.data?.isAdmin || false;
     } catch {
@@ -219,10 +301,197 @@ export const adminAPI = {
   },
 };
 
+// Public CMS API (no auth required)
+export const publicCMSAPI = {
+  // Pages
+  getPageBySlug: async (slug: string, preview?: boolean) => {
+    const query = preview ? '?preview=true' : '';
+    return apiRequest<{ status: string; data: any }>(`/api/pages/${slug}${query}`);
+  },
+  listPages: async () => apiRequest<{ status: string; data: any }>('/api/pages'),
+
+  // Services
+  getServiceBySlug: async (slug: string, preview?: boolean) => {
+    const query = preview ? '?preview=true' : '';
+    return apiRequest<{ status: string; data: any }>(`/api/services/${slug}${query}`);
+  },
+  listServices: async (params?: { page?: number; limit?: number; featured?: boolean; q?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.featured) query.append('featured', 'true');
+    if (params?.q) query.append('q', params.q);
+    const queryStr = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest<{ status: string; data: any }>(`/api/services${queryStr}`);
+  },
+
+  // Blog
+  getPostBySlug: async (slug: string, preview?: boolean) => {
+    const query = preview ? '?preview=true' : '';
+    return apiRequest<{ status: string; data: any }>(`/api/blog/${slug}${query}`);
+  },
+  listPosts: async (params?: { page?: number; limit?: number; category?: string; tag?: string; q?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.category) query.append('category', params.category);
+    if (params?.tag) query.append('tag', params.tag);
+    if (params?.q) query.append('q', params.q);
+    const queryStr = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest<{ status: string; data: any }>(`/api/blog${queryStr}`);
+  },
+
+  // Categories & Tags
+  listCategories: async () => apiRequest<{ status: string; data: any }>('/api/categories'),
+  listTags: async () => apiRequest<{ status: string; data: any }>('/api/tags'),
+
+  // Testimonials
+  listTestimonials: async (params?: { limit?: number; featured?: boolean }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.featured) query.append('featured', 'true');
+    const queryStr = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest<{ status: string; data: any }>(`/api/testimonials${queryStr}`);
+  },
+  getTestimonial: async (id: string) => apiRequest<{ status: string; data: any }>(`/api/testimonials/${id}`),
+
+  // Partners
+  listPartners: async (featured?: boolean) => {
+    const query = featured ? '?featured=true' : '';
+    return apiRequest<{ status: string; data: any }>(`/api/partners${query}`);
+  },
+  getPartnerBySlug: async (slug: string) => apiRequest<{ status: string; data: any }>(`/api/partners/${slug}`),
+
+  // Banners
+  listBanners: async () => apiRequest<{ status: string; data: any }>('/api/banners'),
+
+  // Site Settings
+  getSiteSettings: async () => apiRequest<{ status: string; data: any }>('/api/settings'),
+
+  // Media
+  listMedia: async () => apiRequest<{ status: string; data: any }>('/api/media'),
+  getMediaById: async (id: string) => apiRequest<{ status: string; data: any }>(`/api/media/${id}`),
+
+  // FAQ
+  listFAQs: async (params?: { category?: string; serviceRef?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.category) query.append('category', params.category);
+    if (params?.serviceRef) query.append('serviceRef', params.serviceRef);
+    const queryStr = query.toString() ? `?${queryStr}` : '';
+    return apiRequest<{ status: string; data: any }>(`/api/faqs${queryStr}`);
+  },
+  getFAQ: async (id: string) => apiRequest<{ status: string; data: any }>(`/api/faqs/${id}`),
+
+  // Stats
+  listStats: async () => apiRequest<{ status: string; data: any }>('/api/stats'),
+
+  // Process Steps
+  listProcessSteps: async () => apiRequest<{ status: string; data: any }>('/api/process-steps'),
+
+  // Navigation
+  listNavItems: async (position?: 'header' | 'footer') => {
+    const query = position ? `?position=${position}` : '';
+    return apiRequest<{ status: string; data: any }>(`/api/nav-items${query}`);
+  },
+
+  // Footer
+  getFooter: async () => apiRequest<{ status: string; data: any }>('/api/footer'),
+
+  // EMI Calculator
+  calculateEMI: async (data: { principal: number; rate: number; tenureMonths: number }) => {
+    return apiRequest<{ status: string; data: { monthlyPayment: number; totalAmount: number; totalInterest: number; schedule: any[] } }>('/api/emi/calculate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // WhyUs Features
+  listWhyUsFeatures: async () => apiRequest<{ status: string; data: any }>('/api/why-us-features'),
+};
+
+// CMS API (Pages, Services, Blog, Media, Forms) - Admin only
+export const cmsAPI = {
+  // Pages
+  getPagesAdmin: async () => apiRequest('/api/admin/pages'),
+  listPagesAdmin: async () => apiRequest('/api/admin/pages'),
+  getPageAdmin: async (id: string) => apiRequest(`/api/admin/pages/${id}`),
+  createPageAdmin: async (payload: Record<string, unknown>) => apiRequest('/api/admin/pages', { method: 'POST', body: JSON.stringify(payload) }),
+  updatePageAdmin: async (id: string, payload: Record<string, unknown>) => apiRequest(`/api/admin/pages/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deletePageAdmin: async (id: string) => apiRequest(`/api/admin/pages/${id}`, { method: 'DELETE' }),
+  publishPageAdmin: async (id: string) => apiRequest(`/api/admin/pages/${id}/publish`, { method: 'POST' }),
+  schedulePageAdmin: async (id: string, publishedAt: string) => apiRequest(`/api/admin/pages/${id}/schedule`, { method: 'POST', body: JSON.stringify({ publishedAt }) }),
+
+  // Services
+  listServicesAdmin: async () => apiRequest('/api/admin/services'),
+  getServiceAdmin: async (id: string) => apiRequest(`/api/admin/services/${id}`),
+  createServiceAdmin: async (payload: Record<string, unknown>) => apiRequest('/api/admin/services', { method: 'POST', body: JSON.stringify(payload) }),
+  updateServiceAdmin: async (id: string, payload: Record<string, unknown>) => apiRequest(`/api/admin/services/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteServiceAdmin: async (id: string) => apiRequest(`/api/admin/services/${id}`, { method: 'DELETE' }),
+
+  // Blog
+  listPostsAdmin: async () => apiRequest('/api/admin/blogposts'),
+  getPostAdmin: async (id: string) => apiRequest(`/api/admin/blogposts/${id}`),
+  createPostAdmin: async (payload: Record<string, unknown>) => apiRequest('/api/admin/blogposts', { method: 'POST', body: JSON.stringify(payload) }),
+  updatePostAdmin: async (id: string, payload: Record<string, unknown>) => apiRequest(`/api/admin/blogposts/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  publishPostAdmin: async (id: string) => apiRequest(`/api/admin/blogposts/${id}/publish`, { method: 'POST' }),
+  schedulePostAdmin: async (id: string, publishedAt: string) => apiRequest(`/api/admin/blogposts/${id}/schedule`, { method: 'POST', body: JSON.stringify({ publishedAt }) }),
+  deletePostAdmin: async (id: string) => apiRequest(`/api/admin/blogposts/${id}`, { method: 'DELETE' }),
+
+  // Media: upload uses multipart; listing
+  listMediaPublic: async () => apiRequest('/api/media'),
+  listMediaAdmin: async () => apiRequest('/api/admin/media'),
+  uploadMediaAdmin: async (file: File) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append('file', file);
+
+    const headers: HeadersInit = {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+
+    const res = await fetch(`${API_URL}/api/media/upload`, {
+      method: 'POST',
+      body: form,
+      headers,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload failed');
+    return data;
+  },
+
+  // Forms
+  listFormsAdmin: async () => apiRequest('/api/admin/forms'),
+  getFormAdmin: async (id: string) => apiRequest(`/api/admin/forms/${id}`),
+  createFormAdmin: async (payload: Record<string, unknown>) => apiRequest('/api/admin/forms', { method: 'POST', body: JSON.stringify(payload) }),
+  updateFormAdmin: async (id: string, payload: Record<string, unknown>) => apiRequest(`/api/admin/forms/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+
+  // Users & Roles
+  listUsersAdmin: async () => apiRequest('/api/admin/users'),
+  getUserAdmin: async (id: string) => apiRequest(`/api/admin/users/${id}`),
+  createUserAdmin: async (payload: Record<string, unknown>) => apiRequest('/api/admin/users', { method: 'POST', body: JSON.stringify(payload) }),
+  updateUserAdmin: async (id: string, payload: Record<string, unknown>) => apiRequest(`/api/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteUserAdmin: async (id: string) => apiRequest(`/api/admin/users/${id}`, { method: 'DELETE' }),
+
+  // Leads
+  listLeadsAdmin: async () => apiRequest('/api/admin/leads'),
+  getLeadAdmin: async (id: string) => apiRequest(`/api/admin/leads/${id}`),
+  updateLeadAdmin: async (id: string, payload: Record<string, unknown>) => apiRequest(`/api/admin/leads/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  exportLeadsCSVAdmin: async () => apiRequest('/api/admin/leads/export/csv'),
+
+  // Site Settings
+  getSiteSettingsAdmin: async () => apiRequest('/api/admin/settings'),
+  updateSiteSettingsAdmin: async (payload: Record<string, unknown>) => apiRequest('/api/admin/settings', { method: 'PATCH', body: JSON.stringify(payload) }),
+};
+
 export default {
   auth: authAPI,
+  customerAuth: customerAuthAPI,
+  customer: customerAPI,
   applications: applicationsAPI,
   profile: profileAPI,
   contact: contactAPI,
   admin: adminAPI,
+  cms: cmsAPI,
+  publicCMS: publicCMSAPI,
 };

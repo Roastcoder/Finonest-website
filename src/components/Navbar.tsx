@@ -10,12 +10,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { publicCMSAPI } from "@/lib/api";
 import logo from "@/assets/logo.png";
+
+interface NavItem {
+  _id: string;
+  label: string;
+  href: string;
+  children?: NavItem[];
+  target?: '_self' | '_blank';
+}
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoggedIn, logout } = useAuth();
@@ -28,50 +39,24 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navLinks = [{
-    name: "Home",
-    href: "/"
-  }, {
-    name: "Services",
-    href: "/services",
-    dropdown: [{
-      name: "Home Loan",
-      href: "/services/home-loan"
-    }, {
-      name: "Used Car Loan",
-      href: "/services/used-car-loan"
-    }, {
-      name: "Personal Loan",
-      href: "/services/personal-loan"
-    }, {
-      name: "Business Loan",
-      href: "/services/business-loan"
-    }, {
-      name: "Loan Against Property",
-      href: "/services/lap"
-    }, {
-      name: "Credit Cards",
-      href: "/services/credit-cards"
-    }, {
-      name: "Finobizz Learning",
-      href: "/services/finobizz-learning"
-    }]
-  }, {
-    name: "Credit Score",
-    href: "/credit-score"
-  }, {
-    name: "EMI Calculator",
-    href: "/emi-calculator"
-  }, {
-    name: "Blog",
-    href: "/blog"
-  }, {
-    name: "About",
-    href: "/about"
-  }, {
-    name: "Contact",
-    href: "/contact"
-  }];
+  useEffect(() => {
+    const loadNavItems = async () => {
+      try {
+        setLoading(true);
+        const res = await publicCMSAPI.listNavItems('header');
+        if (res.status === 'ok' && res.data) {
+          setNavItems(res.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load navigation items:', error);
+        // Fallback to empty array - navbar will just show logo and auth buttons
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadNavItems();
+  }, []);
 
   const isActive = (href: string) => location.pathname === href;
 
@@ -87,46 +72,78 @@ const Navbar = () => {
           <img src={logo} alt="Finonest" className="h-10 object-contain" />
         </Link>
 
-        <div className="hidden lg:flex items-center gap-1">
-          {navLinks.map(link => (
-            <div 
-              key={link.name} 
-              className="relative"
-              onMouseEnter={() => link.dropdown && setActiveDropdown(link.name)}
-              onMouseLeave={() => setActiveDropdown(null)}
-            >
-              <Link 
-                to={link.href} 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center gap-1 ${
-                  isActive(link.href) 
-                    ? "text-primary bg-primary/10" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
+        {!loading && (
+          <div className="hidden lg:flex items-center gap-1">
+            {navItems.map(item => (
+              <div 
+                key={item._id} 
+                className="relative"
+                onMouseEnter={() => item.children && item.children.length > 0 && setActiveDropdown(item._id)}
+                onMouseLeave={() => setActiveDropdown(null)}
               >
-                {link.name}
-                {link.dropdown && <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === link.name ? 'rotate-180' : ''}`} />}
-              </Link>
+                {item.href.startsWith('http') ? (
+                  <a
+                    href={item.href}
+                    target={item.target || '_blank'}
+                    rel="noopener noreferrer"
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center gap-1 ${
+                      isActive(item.href) 
+                        ? "text-primary bg-primary/10" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {item.label}
+                    {item.children && item.children.length > 0 && <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === item._id ? 'rotate-180' : ''}`} />}
+                  </a>
+                ) : (
+                  <Link 
+                    to={item.href} 
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center gap-1 ${
+                      isActive(item.href) 
+                        ? "text-primary bg-primary/10" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {item.label}
+                    {item.children && item.children.length > 0 && <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === item._id ? 'rotate-180' : ''}`} />}
+                  </Link>
+                )}
 
-              {/* Dropdown */}
-              {link.dropdown && activeDropdown === link.name && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-card rounded-xl border border-border shadow-xl p-2 animate-fade-in z-50">
-                  {link.dropdown.map(item => (
-                    <Link 
-                      key={item.name} 
-                      to={item.href} 
-                      className="block px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                {/* Dropdown */}
+                {item.children && item.children.length > 0 && activeDropdown === item._id && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-card rounded-xl border border-border shadow-xl p-2 animate-fade-in z-50">
+                    {item.children.map(child => (
+                      child.href.startsWith('http') ? (
+                        <a
+                          key={child._id}
+                          href={child.href}
+                          target={child.target || '_blank'}
+                          rel="noopener noreferrer"
+                          className="block px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                        >
+                          {child.label}
+                        </a>
+                      ) : (
+                        <Link 
+                          key={child._id}
+                          to={child.href} 
+                          className="block px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                        >
+                          {child.label}
+                        </Link>
+                      )
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="hidden lg:flex items-center gap-3">
-          {isLoggedIn && user ? (
+          {/* Debug: Show current auth state */}
+          {console.log('Auth state:', { isLoggedIn, user })}
+          {(isLoggedIn && user && user.email) || localStorage.getItem('token') ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 px-3 py-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors">
@@ -134,17 +151,22 @@ const Navbar = () => {
                     <User className="w-4 h-4 text-primary-foreground" />
                   </div>
                   <span className="text-sm font-medium text-foreground max-w-[100px] truncate">
-                    {user.email?.split('@')[0]}
+                    {user?.fullName || user?.name || user?.email?.split('@')[0] || 'User'}
                   </span>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-card border border-border shadow-xl z-50">
                 <div className="px-3 py-2 border-b border-border">
-                  <p className="text-sm font-medium text-foreground truncate">{user.email}</p>
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {user?.fullName || user?.name || user?.email || 'User'}
+                  </p>
+                  {user?.email && (user?.fullName || user?.name) && (
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  )}
                 </div>
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link to="/dashboard" className="flex items-center gap-2">
+                  <Link to="/customer/dashboard" className="flex items-center gap-2">
                     <LayoutDashboard className="w-4 h-4" />
                     Dashboard
                   </Link>
@@ -183,47 +205,72 @@ const Navbar = () => {
       {/* Mobile Menu */}
       <div className={`lg:hidden absolute top-full left-0 right-0 bg-card border-b border-border shadow-xl transition-all duration-300 overflow-y-auto ${isMobileMenuOpen ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}>
         <div className="container mx-auto px-6 py-4 flex flex-col gap-2">
-          {navLinks.map(link => (
-            <div key={link.name}>
-              {link.dropdown ? (
+          {!loading && navItems.map(item => (
+            <div key={item._id}>
+              {item.children && item.children.length > 0 ? (
                 <>
                   <button
                     type="button"
-                    onClick={() => setActiveDropdown(activeDropdown === link.name ? null : link.name)}
-                    className={`w-full flex items-center justify-between py-3 px-4 rounded-lg transition-colors ${isActive(link.href) ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"}`}
+                    onClick={() => setActiveDropdown(activeDropdown === item._id ? null : item._id)}
+                    className={`w-full flex items-center justify-between py-3 px-4 rounded-lg transition-colors ${isActive(item.href) ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"}`}
                   >
-                    <span>{link.name}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === link.name ? 'rotate-180' : ''}`} />
+                    <span>{item.label}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === item._id ? 'rotate-180' : ''}`} />
                   </button>
-                  <div className={`ml-4 mt-1 space-y-1 border-l-2 border-border pl-4 overflow-hidden transition-all duration-300 ${activeDropdown === link.name ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    {link.dropdown.map(item => (
-                      <Link 
-                        key={item.name} 
-                        to={item.href} 
-                        className="block py-2 px-4 text-sm text-muted-foreground hover:text-foreground rounded-lg" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {item.name}
-                      </Link>
+                  <div className={`ml-4 mt-1 space-y-1 border-l-2 border-border pl-4 overflow-hidden transition-all duration-300 ${activeDropdown === item._id ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                    {item.children.map(child => (
+                      child.href.startsWith('http') ? (
+                        <a
+                          key={child._id}
+                          href={child.href}
+                          target={child.target || '_blank'}
+                          rel="noopener noreferrer"
+                          className="block py-2 px-4 text-sm text-muted-foreground hover:text-foreground rounded-lg" 
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {child.label}
+                        </a>
+                      ) : (
+                        <Link 
+                          key={child._id}
+                          to={child.href} 
+                          className="block py-2 px-4 text-sm text-muted-foreground hover:text-foreground rounded-lg" 
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {child.label}
+                        </Link>
+                      )
                     ))}
                   </div>
                 </>
               ) : (
-                <Link 
-                  to={link.href} 
-                  className={`block py-3 px-4 rounded-lg transition-colors ${isActive(link.href) ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"}`} 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
+                item.href.startsWith('http') ? (
+                  <a
+                    href={item.href}
+                    target={item.target || '_blank'}
+                    rel="noopener noreferrer"
+                    className={`block py-3 px-4 rounded-lg transition-colors ${isActive(item.href) ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"}`} 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link 
+                    to={item.href} 
+                    className={`block py-3 px-4 rounded-lg transition-colors ${isActive(item.href) ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"}`} 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                )
               )}
             </div>
           ))}
           <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-border">
-            {isLoggedIn && user ? (
+            {isLoggedIn && user && user.email ? (
               <>
                 <Button variant="ghost" className="w-full justify-center" asChild>
-                  <Link to="/dashboard">
+                  <Link to="/customer/dashboard">
                     <LayoutDashboard className="w-4 h-4 mr-2" />
                     Dashboard
                   </Link>

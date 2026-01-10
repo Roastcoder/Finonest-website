@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - MONGO_URI=mongodb://Fino:Finonest%40yogi%40super@m4w0kcwos8kwgkw0wg8sgk4w:27017/?directConnection=true
+      - JWT_SECRET=your-jwt-secret-key-here
+      - JWT_REFRESH_SECRET=your-jwt-refresh-secret-key-here
+    restart: unless-stopped

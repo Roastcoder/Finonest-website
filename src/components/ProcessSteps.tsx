@@ -1,48 +1,63 @@
-import { FileText, Search, CheckCircle, Wallet, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileText, Search, CheckCircle, Wallet, ArrowRight, Loader2 } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { publicCMSAPI } from "@/lib/api";
 import stepApplyOnline from "@/assets/step-apply-online.jpg";
 import stepDocumentVerify from "@/assets/step-document-verify.jpg";
 import stepApproval from "@/assets/step-approval.jpg";
 import stepDisbursement from "@/assets/step-disbursement.jpg";
 
-const steps = [
-  {
-    icon: FileText,
-    step: "01",
-    title: "Apply Online",
-    description: "Fill out our simple online application form in just 5 minutes with basic details",
-    color: "primary",
-    image: stepApplyOnline,
-  },
-  {
-    icon: Search,
-    step: "02", 
-    title: "Document Verification",
-    description: "Upload documents digitally or opt for doorstep pickup by our executive",
-    color: "accent",
-    image: stepDocumentVerify,
-  },
-  {
-    icon: CheckCircle,
-    step: "03",
-    title: "Quick Approval",
-    description: "Get approval within 24 hours after document verification is complete",
-    color: "primary",
-    image: stepApproval,
-  },
-  {
-    icon: Wallet,
-    step: "04",
-    title: "Loan Disbursement",
-    description: "Amount credited directly to your bank account within 48 hours of approval",
-    color: "accent",
-    image: stepDisbursement,
-  },
-];
+interface ProcessStepItem {
+  _id: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  order?: number;
+}
+
+const iconMap: Record<string, any> = {
+  file: FileText,
+  filetext: FileText,
+  search: Search,
+  check: CheckCircle,
+  checkcircle: CheckCircle,
+  wallet: Wallet,
+};
+
+const imageFallbacks = [stepApplyOnline, stepDocumentVerify, stepApproval, stepDisbursement];
 
 const ProcessSteps = () => {
   const { ref: headerRef, isRevealed: headerRevealed } = useScrollReveal();
   const { ref: stepsRef, isRevealed: stepsRevealed } = useScrollReveal({ threshold: 0.05 });
+  const [steps, setSteps] = useState<ProcessStepItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSteps = async () => {
+      try {
+        setLoading(true);
+        const res = await publicCMSAPI.listProcessSteps();
+        if (res.status === 'ok' && res.data) {
+          const items = [...res.data].sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+          setSteps(items);
+        }
+      } catch (error) {
+        console.error('Failed to load process steps:', error);
+        setSteps([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSteps();
+  }, []);
+
+  const getIcon = (icon?: string) => {
+    if (!icon) return FileText;
+    const key = icon.toLowerCase().replace(/\s+/g, '');
+    return iconMap[key] || FileText;
+  };
+
+  const getImage = (index: number) => imageFallbacks[index % imageFallbacks.length];
 
   return (
     <section id="process" className="py-10 md:py-24 relative overflow-hidden bg-gradient-section">
@@ -72,79 +87,97 @@ const ProcessSteps = () => {
 
         {/* Steps Timeline */}
         <div ref={stepsRef} className="relative max-w-5xl mx-auto">
-          {/* Connection Line - Desktop */}
-          <div className="hidden lg:block absolute top-32 left-[10%] right-[10%] h-0.5">
-            <div className="w-full h-full bg-gradient-to-r from-primary via-accent to-primary opacity-30" />
-            <div className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-primary to-transparent animate-pulse" 
-                 style={{ animationDuration: '3s' }} />
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-8">
-            {steps.map((step, index) => (
-              <div
-                key={step.step}
-                className={`relative group card-scroll-reveal ${stepsRevealed ? 'revealed' : ''}`}
-                style={{ transitionDelay: `${index * 0.15}s` }}
-              >
-                {/* Step Card */}
-                <div className="glass rounded-2xl md:rounded-3xl overflow-hidden card-hover h-full relative">
-                  {/* Step Number Background */}
-                  <div className="absolute top-2 right-2 md:-top-4 md:-right-4 text-4xl md:text-8xl font-display font-bold text-foreground/[0.05] select-none z-10">
-                    {step.step}
-                  </div>
-
-                  {/* Image */}
-                  <div className="relative h-20 md:h-32 overflow-hidden">
-                    <img 
-                      src={step.image} 
-                      alt={step.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-                    
-                    {/* Step Badge on Image */}
-                    <div className={`absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] md:text-xs font-semibold ${
-                      step.color === "primary" 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-accent text-accent-foreground"
-                    }`}>
-                      Step {step.step}
-                    </div>
-                  </div>
-
-                  <div className="p-3 md:p-6">
-                    {/* Icon */}
-                    <div className={`relative w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 transition-all duration-500 group-hover:scale-110 ${
-                      step.color === "primary" 
-                        ? "bg-primary/10 group-hover:bg-gradient-primary group-hover:glow-primary" 
-                        : "bg-accent/10 group-hover:bg-gradient-accent group-hover:glow-accent"
-                    }`}>
-                      <step.icon className={`w-4 h-4 md:w-6 md:h-6 transition-colors duration-300 ${
-                        step.color === "primary" 
-                          ? "text-primary group-hover:text-primary-foreground" 
-                          : "text-accent group-hover:text-accent-foreground"
-                      }`} />
-                    </div>
-
-                    {/* Content */}
-                    <h3 className="font-display text-xs md:text-lg font-bold mb-1 md:mb-2 group-hover:text-primary transition-colors">
-                      {step.title}
-                    </h3>
-                    <p className="text-[10px] md:text-sm text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-none">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Arrow Connector - Hidden on mobile 2x2 grid */}
-                {index < steps.length - 1 && (
-                  <div className="hidden lg:flex justify-center py-4">
-                    <ArrowRight className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                )}
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : steps.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Steps will appear here once published.
+            </div>
+          ) : (
+            <>
+              {/* Connection Line - Desktop */}
+              <div className="hidden lg:block absolute top-32 left-[10%] right-[10%] h-0.5">
+                <div className="w-full h-full bg-gradient-to-r from-primary via-accent to-primary opacity-30" />
+                <div className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-primary to-transparent animate-pulse" 
+                    style={{ animationDuration: '3s' }} />
               </div>
-            ))}
-          </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-8">
+                {steps.map((step, index) => {
+                  const Icon = getIcon(step.icon);
+                  const image = getImage(index);
+                  const stepNumber = (step.order || index + 1).toString().padStart(2, '0');
+                  const color = index % 2 === 0 ? 'primary' : 'accent';
+                  return (
+                    <div
+                      key={step._id}
+                      className={`relative group card-scroll-reveal ${stepsRevealed ? 'revealed' : ''}`}
+                      style={{ transitionDelay: `${index * 0.15}s` }}
+                    >
+                      {/* Step Card */}
+                      <div className="glass rounded-2xl md:rounded-3xl overflow-hidden card-hover h-full relative">
+                        {/* Step Number Background */}
+                        <div className="absolute top-2 right-2 md:-top-4 md:-right-4 text-4xl md:text-8xl font-display font-bold text-foreground/[0.05] select-none z-10">
+                          {stepNumber}
+                        </div>
+
+                        {/* Image */}
+                        <div className="relative h-20 md:h-32 overflow-hidden">
+                          <img 
+                            src={image} 
+                            alt={step.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+                          
+                          {/* Step Badge on Image */}
+                          <div className={`absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] md:text-xs font-semibold ${
+                            color === "primary" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-accent text-accent-foreground"
+                          }`}>
+                            Step {stepNumber}
+                          </div>
+                        </div>
+
+                        <div className="p-3 md:p-6">
+                          {/* Icon */}
+                          <div className={`relative w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center mb-2 md:mb-4 transition-all duration-500 group-hover:scale-110 ${
+                            color === "primary" 
+                              ? "bg-primary/10 group-hover:bg-gradient-primary group-hover:glow-primary" 
+                              : "bg-accent/10 group-hover:bg-gradient-accent group-hover:glow-accent"
+                          }`}>
+                            <Icon className={`w-4 h-4 md:w-6 md:h-6 transition-colors duration-300 ${
+                              color === "primary" 
+                                ? "text-primary group-hover:text-primary-foreground" 
+                                : "text-accent group-hover:text-accent-foreground"
+                            }`} />
+                          </div>
+
+                          {/* Content */}
+                          <h3 className="font-display text-xs md:text-lg font-bold mb-1 md:mb-2 group-hover:text-primary transition-colors">
+                            {step.title}
+                          </h3>
+                          <p className="text-[10px] md:text-sm text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-none">
+                            {step.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Arrow Connector - Hidden on mobile 2x2 grid */}
+                      {index < steps.length - 1 && (
+                        <div className="hidden lg:flex justify-center py-4">
+                          <ArrowRight className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         {/* CTA */}
