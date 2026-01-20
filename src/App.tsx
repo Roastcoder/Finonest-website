@@ -34,6 +34,13 @@ import Apply from "./pages/Apply";
 import ErrorBoundary from "./components/ErrorBoundary";
 import BankingPartnersPage from "./pages/BankingPartnersPage";
 import EMICalculatorPage from "./pages/EMICalculatorPage";
+import ApplyCard from "./pages/apply/ApplyCard";
+import ApplyPersonalLoan from "./pages/apply/ApplyPersonalLoan";
+import ApplyCarLoan from "./pages/apply/ApplyCarLoan";
+import KYCPage from "./pages/kyc/KYCPage";
+import StatusPage from "./pages/status/StatusPage";
+import ReferralPage from "./pages/referral/ReferralPage";
+import UTMTracker from "./components/forms/UTMTracker";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +73,7 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <ScrollToTop />
+              <UTMTracker />
               <Routes>
                 <Route path="/" element={<IndexDynamic />} />
                 <Route path="/about" element={<About />} />
@@ -97,6 +105,12 @@ const App = () => {
                 <Route path="/admin/cms" element={<AdminCMS />} />
                 <Route path="/banking-partners" element={<BankingPartnersPage />} />
                 <Route path="/apply" element={<Apply />} />
+                <Route path="/apply-card" element={<ApplyCard />} />
+                <Route path="/apply-personal-loan" element={<ApplyPersonalLoan />} />
+                <Route path="/apply-car-loan" element={<ApplyCarLoan />} />
+                <Route path="/kyc" element={<KYCPage />} />
+                <Route path="/status" element={<StatusPage />} />
+                <Route path="/referral" element={<ReferralPage />} />
                 <Route path="/emi-calculator" element={<EMICalculatorPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
